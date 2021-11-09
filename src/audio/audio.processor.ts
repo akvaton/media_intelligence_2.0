@@ -6,10 +6,10 @@ import { Job } from 'bull';
 export class AudioProcessor {
   private readonly logger = new Logger(AudioProcessor.name);
 
-  @Process('transcode')
+  @Process()
   handleTranscode(job: Job) {
-    this.logger.debug('Start transcoding...');
+    this.logger.debug('Start processing...', job.name);
     this.logger.debug(job.data);
-    this.logger.debug('Transcoding completed');
+    this.logger.debug('Transcoding completed', job.name);
   }
 }
