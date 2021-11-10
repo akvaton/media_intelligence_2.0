@@ -1,12 +1,17 @@
 import { Module } from '@nestjs/common';
+import { AdminModule } from '@adminjs/nestjs';
 import { BullModule } from '@nestjs/bull';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AudioModule } from './audio/audio.module';
-import { FeedModule } from './feed/feed.module';
-import { Feed } from './feed/feed.entity';
-import { DefaultAdminModule } from 'nestjs-admin';
+import { FeedsModule } from './feeds/feeds.module';
+import { Feed } from './feeds/entities/feed.entity';
+import AdminJS from 'adminjs';
+import { Database, Resource } from '@adminjs/typeorm';
+// import { ExpressCustomLoader } from './express-custom-loader';
+
+AdminJS.registerAdapter({ Database, Resource });
 
 @Module({
   imports: [
@@ -18,8 +23,14 @@ import { DefaultAdminModule } from 'nestjs-admin';
     }),
     TypeOrmModule.forRoot(),
     AudioModule,
-    FeedModule,
-    DefaultAdminModule,
+    AdminModule.createAdmin({
+      adminJsOptions: {
+        rootPath: '/admin',
+        resources: [Feed],
+      },
+      // customLoader: ExpressCustomLoader,
+    }),
+    FeedsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
