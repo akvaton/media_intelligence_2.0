@@ -1,18 +1,14 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-
+// https://stackoverflow.com/questions/50093144/mysql-8-0-client-does-not-support-authentication-protocol-requested-by-server
 module.exports = {
   type: 'mysql',
-  host: 'localhost',
+  host: '127.0.0.1',
   port: 3306,
   database: process.env.DATABASE_NAME,
   username: 'root',
+  password: 'root',
   entities: [
     'dist/**/*.entity{.ts,.js}',
     'node_modules/nestjs-admin/**/*.entity.js',
   ],
-  // migrations: [join(__dirname, 'src', '/migrations/*{.ts,.js}')],
-  // cli: {
-  //   migrationsDir: 'src/migrations',
-  // },
   synchronize: true,
 };

@@ -5,7 +5,7 @@ import { BullAdapter } from 'bull-board/bullAdapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const aQueue = app.get(`BullQueue_audio`);
+  const aQueue = app.get(`BullQueue_feeds`);
   const { router: bullRouter } = createBullBoard([new BullAdapter(aQueue)]);
 
   app.use('/bull-board', bullRouter);

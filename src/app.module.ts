@@ -1,3 +1,4 @@
+import AdminJS from 'adminjs';
 import { Module } from '@nestjs/common';
 import { AdminModule } from '@adminjs/nestjs';
 import { BullModule } from '@nestjs/bull';
@@ -7,14 +8,14 @@ import { AppService } from './app.service';
 import { AudioModule } from './audio/audio.module';
 import { FeedsModule } from './feeds/feeds.module';
 import { Feed } from './feeds/entities/feed.entity';
-import AdminJS from 'adminjs';
 import { Database, Resource } from '@adminjs/typeorm';
-// import { ExpressCustomLoader } from './express-custom-loader';
+import { ScheduleModule } from '@nestjs/schedule';
 
 AdminJS.registerAdapter({ Database, Resource });
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     BullModule.forRoot({
       redis: {
         host: 'localhost',
@@ -28,7 +29,6 @@ AdminJS.registerAdapter({ Database, Resource });
         rootPath: '/admin',
         resources: [Feed],
       },
-      // customLoader: ExpressCustomLoader,
     }),
     FeedsModule,
   ],
