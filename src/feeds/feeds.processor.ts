@@ -2,6 +2,7 @@ import { OnQueueActive, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { Feed } from './entities/feed.entity';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
 
 @Processor('feeds')
@@ -23,7 +24,7 @@ export class FeedsProcessor {
     const { url, name } = job.data;
     this.logger.debug('Start parsing...', name);
     const feed = await this.parser.parseURL(url);
-    console.log(`Feed for ${job.data.name}`, feed);
+    console.log(`Feed for ${job.data.name}`, feed.items);
     await this.logger.debug('Parsing completed', job.name);
   }
 }

@@ -10,6 +10,7 @@ import { FeedsModule } from './feeds/feeds.module';
 import { Feed } from './feeds/entities/feed.entity';
 import { Database, Resource } from '@adminjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NewsModule } from './news/news.module';
 
 AdminJS.registerAdapter({ Database, Resource });
 
@@ -28,9 +29,14 @@ AdminJS.registerAdapter({ Database, Resource });
       adminJsOptions: {
         rootPath: '/admin',
         resources: [Feed],
+        branding: {
+          logo: false,
+          companyName: '',
+        },
       },
     }),
     FeedsModule,
+    NewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
