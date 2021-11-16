@@ -1,4 +1,11 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { NewsItem } from '../../news/entities/news-item.entity';
 
 @Entity()
 export class Feed extends BaseEntity {
@@ -10,4 +17,7 @@ export class Feed extends BaseEntity {
 
   @Column({ unique: true })
   url: string;
+
+  @OneToMany(() => NewsItem, (article) => article.source)
+  articles: NewsItem[];
 }

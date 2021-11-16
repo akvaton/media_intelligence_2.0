@@ -1,3 +1,17 @@
-import { BaseEntity } from 'typeorm';
+import { BaseEntity, Column, PrimaryColumn, Entity, ManyToOne } from 'typeorm';
+import { Feed } from '../../feeds/entities/feed.entity';
 
-export class NewsItem extends BaseEntity {}
+@Entity('article')
+export class NewsItem extends BaseEntity {
+  @PrimaryColumn({ unique: true })
+  link: string;
+
+  @Column()
+  title: string;
+
+  @Column()
+  pubDate: string;
+
+  @ManyToOne(() => Feed, (feed) => feed.articles)
+  source: Feed;
+}

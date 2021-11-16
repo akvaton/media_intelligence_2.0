@@ -7,8 +7,8 @@ module.exports = {
   username: 'root',
   password: 'root',
   entities: [
-    'dist/**/*.entity{.ts,.js}',
+    __dirname + '/dist/**/*.entity{.ts,.js}',
     'node_modules/nestjs-admin/**/*.entity.js',
   ],
-  synchronize: true,
+  // synchronize: true,
 };

@@ -24,7 +24,11 @@ export class FeedsService {
   }
 
   create(createFeedDto: FeedDto) {
-    return this.feedsRepository.create(createFeedDto);
+    const feed = new Feed();
+
+    feed.name = createFeedDto.name;
+    feed.url = createFeedDto.url;
+    return this.feedsRepository.save(feed);
   }
 
   findAll() {
@@ -36,6 +40,7 @@ export class FeedsService {
   }
 
   update(id: number, updateFeedDto: FeedDto) {
+    console.log('ZHOPA', id, updateFeedDto);
     return this.feedsRepository.update(id, updateFeedDto);
   }
 
@@ -46,15 +51,12 @@ export class FeedsService {
   @Cron(CronExpression.EVERY_10_SECONDS)
   async checkTheFeedsDataBase() {
     const feeds = await this.findAll();
-    this.logger.debug('Called every 10 seconds!', JSON.stringify(feeds));
-    const jobs = await this.feedsQueue.getRepeatableJobs();
-    this.logger.debug('JOBS', JSON.stringify(jobs));
 
     feeds.forEach((feed) => {
       this.feedsQueue.add(
         'parse',
         { ...feed },
-        { repeat: { every: 20000 }, jobId: feed.id },
+        { repeat: { cron: CronExpression.EVERY_10_SECONDS }, jobId: feed.id },
       );
     });
   }
