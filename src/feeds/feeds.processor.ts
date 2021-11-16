@@ -3,8 +3,8 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { Feed } from './entities/feed.entity';
 import { NewsService } from '../news/news.service';
-import { HttpService } from '@nestjs/axios';
 import axios from 'axios';
+import { FeedsService } from './feeds.service';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -30,7 +30,7 @@ export class FeedsProcessor {
 
   constructor(
     private newsService: NewsService,
-    private httpService: HttpService,
+    private feedsService: FeedsService,
   ) {}
 
   @OnQueueActive()
@@ -46,16 +46,7 @@ export class FeedsProcessor {
   async handleParse(job: Job<Feed>) {
     const { url, name } = job.data;
     this.logger.debug('Start parsing...', name);
-    // const feed = await this.parser.parseURL(url);
 
-    // this.logger.debug(
-    //   'RESULT',
-    //   JSON.stringify(
-    //     iconv.decode(JSON.stringify(feed), 'windows-1251'),
-    //     null,
-    //     3,
-    //   ),
-    // );
     try {
       const feed = await axios
         // @ts-expect-error as IDK why it is not documented
@@ -63,8 +54,9 @@ export class FeedsProcessor {
 
       console.log(`Feed for ${job.data.name}`);
       const feedData = await this.parser.parseString(feed.data);
+      const source = await this.feedsService.findOne(job.data.id);
       feedData.items.forEach((item) => {
-        this.newsService.createIfNotExist({ ...item, source: job.data });
+        this.newsService.createIfNotExist({ ...item, source });
       });
       await this.logger.debug('Parsing completed', job.name);
     } catch (e) {

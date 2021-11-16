@@ -1,9 +1,18 @@
-import { BaseEntity, Column, PrimaryColumn, Entity, ManyToOne } from 'typeorm';
-import { Feed } from '../../feeds/entities/feed.entity';
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Feed } from 'src/feeds/entities/feed.entity';
 
 @Entity('article')
 export class NewsItem extends BaseEntity {
-  @PrimaryColumn({ unique: true })
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ unique: true })
   link: string;
 
   @Column()

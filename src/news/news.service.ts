@@ -15,14 +15,14 @@ export class NewsService {
   async createIfNotExist(createDto: CreateNewsItemDto) {
     const { link } = createDto;
     const item = await this.newsRepository.findOne({ link });
-    console.log('CREATE', createDto);
+
     if (!item) {
       const newsItem = new NewsItem();
 
       newsItem.link = createDto.link;
       newsItem.source = createDto.source;
       newsItem.title = createDto.title;
-      newsItem.pubDate = createDto.title;
+      newsItem.pubDate = createDto.pubDate;
 
       await this.newsRepository.save(newsItem);
       console.log('News Item has been saved', newsItem);
