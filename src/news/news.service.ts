@@ -4,13 +4,18 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NewsItem } from './entities/news-item.entity';
+import { InteractionsService } from '../interactions/interactions.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class NewsService {
   constructor(
     @InjectRepository(NewsItem)
     private newsRepository: Repository<NewsItem>,
-  ) {}
+    private interactionsService: InteractionsService,
+  ) {
+    this.checkTheNewsDataBase();
+  }
 
   async createIfNotExist(createDto: CreateNewsItemDto) {
     const { link } = createDto;
@@ -25,7 +30,6 @@ export class NewsService {
       newsItem.pubDate = createDto.pubDate;
 
       await this.newsRepository.save(newsItem);
-      console.log('News Item has been saved', newsItem);
     }
   }
 
@@ -43,5 +47,14 @@ export class NewsService {
 
   remove(id: number) {
     return `This action removes a #${id} news`;
+  }
+
+  @Cron(CronExpression.EVERY_30_MINUTES)
+  async checkTheNewsDataBase() {
+    const newsItems = await this.findAll();
+
+    newsItems.forEach((item) => {
+      this.interactionsService.processInteractions(item);
+    });
   }
 }

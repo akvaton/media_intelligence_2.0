@@ -4,6 +4,7 @@ import { NewsService } from './news.service';
 import { NewsController } from './news.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NewsItem } from './entities/news-item.entity';
+import { InteractionsModule } from '../interactions/interactions.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { NewsItem } from './entities/news-item.entity';
     BullModule.registerQueue({
       name: 'news',
     }),
+    InteractionsModule,
   ],
   controllers: [NewsController],
   providers: [NewsService],
