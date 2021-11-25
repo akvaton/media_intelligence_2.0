@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Interaction } from './entities/interaction.entity';
 import { InteractionDto } from './dto/interaction.dto';
 import { NewsItem } from '../news/entities/news-item.entity';
+import axios from 'axios';
 
 @Injectable()
 export class InteractionsService {
@@ -40,32 +41,57 @@ export class InteractionsService {
   }
 
   processNewsItem(newsItem: NewsItem) {
-    this.interactionsQueue.add('parse', newsItem, {
-      repeat: { cron: CronExpression.EVERY_10_SECONDS, limit: 1 },
+    this.interactionsQueue.add('processInteractions', newsItem, {
+      repeat: { cron: CronExpression.EVERY_30_SECONDS, limit: 5 },
       jobId: newsItem.id,
     });
   }
 
+  // Facebook limitation 300 per 1 hour
+  private async getFacebookInteractions(url: string) {
+    let numbTweets = 0;
+    const urlReqest = `https://graph.facebook.com/?id=${url}&fields=engagement,og_object&access_token=${process.env.FB_TOKEN}`;
+    try {
+      const response = await axios.get(urlReqest);
+      numbTweets = response.data.engagement.share_count;
+      } catch (error) {
+      this.logger.error(error);
+      };
+    return numbTweets;
+  }
+
+  private async getTwitterInteractions(url: string, timeSlots: Array<Date>) {
+    const fullUrl = `url:"${url}"`;
+    const result =await this.twitterClient.v2.tweetCountRecent(fullUrl, {granularity: 'minute'});
+    let resultArray = {};
+    let numbTweet = 0;
+    result.data.forEach(function numTweets(c) {
+      numbTweet  = numbTweet + c.tweet_count;
+      resultArray[c.end] = numbTweet;
+      });
+      let resultTweets = [];
+      timeSlots.forEach(function (d) {
+        resultTweets.push({ data: d.toString(), number_of_tweets: resultArray[d.toISOString()]});
+      });
+    return resultTweets;
+  }
   async processInteractions(newsItem: NewsItem) {
     try {
       this.logger.debug(`Processing the item started: ${newsItem.link}`);
       const dateOfRequest = new Date();
-
-      const twitterCount = await this.twitterClient.v2.tweetCountRecent(
-        `url:"${newsItem.link}"`,
+      const facebookInteractions = await this.getFacebookInteractions(
+        newsItem.link,
       );
 
       const interaction = new Interaction();
 
       interaction.requestTime = dateOfRequest;
-      interaction.twitterInteractions = twitterCount.meta.total_tweet_count;
-      interaction.facebookInteractions = 0;
-      interaction.article = newsItem;
-
+      // interaction.twitterInteractions = twitterCount.meta.total_tweet_count;
+      interaction.facebookInteractions = facebookInteractions;
+      // interaction.article = newsItem;
+      interaction.audienceTime = 10;
       await this.interactionsRepository.save(interaction);
-      this.logger.debug(
-        `Processing the item finished: ${newsItem.link}, ${twitterCount.meta.total_tweet_count}`,
-      );
+      this.logger.debug(`Processing the item finished: ${newsItem.link}`);
     } catch (e) {
       this.logger.error(e);
     }

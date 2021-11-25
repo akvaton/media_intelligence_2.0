@@ -6,7 +6,6 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   JoinColumn,
-  RelationId,
 } from 'typeorm';
 import { Feed } from 'src/feeds/entities/feed.entity';
 import { Interaction } from '../../interactions/entities/interaction.entity';
@@ -26,10 +25,10 @@ export class NewsItem extends BaseEntity {
   pubDate: string;
 
   @ManyToOne(() => Feed, (feed) => feed.articles)
-  // @JoinColumn({ name: 'sourceId' })
+  @JoinColumn({ name: 'sourceId' })
   source: Feed;
 
-  @RelationId((newsItem: NewsItem) => newsItem.source)
+  @Column({ name: 'sourceId', type: 'int', nullable: true })
   sourceId: number;
 
   public toString(): string {

@@ -11,6 +11,10 @@ import { InteractionsProcessor } from './interactions.processor';
     TypeOrmModule.forFeature([Interaction]),
     BullModule.registerQueue({
       name: 'interactions',
+      // limiter: {
+      //   max: 200,
+      //   duration: 1000 * 60 * 60,
+      // },
     }),
   ],
   controllers: [InteractionsController],

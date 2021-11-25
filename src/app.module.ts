@@ -13,16 +13,22 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { NewsModule } from './news/news.module';
 import { NewsItem } from './news/entities/news-item.entity';
 import { Interaction } from './interactions/entities/interaction.entity';
+import { ConfigModule } from '@nestjs/config';
 
 AdminJS.registerAdapter({ Database, Resource });
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     ScheduleModule.forRoot(),
-    BullModule.forRoot({
-      redis: {
-        host: 'localhost',
-        port: 6379,
+    BullModule.forRootAsync({
+      useFactory: () => {
+        return {
+          redis: {
+            host: new URL(process.env.REDIS_URL).hostname,
+            port: Number(new URL(process.env.REDIS_URL).port),
+          },
+        };
       },
     }),
     TypeOrmModule.forRoot(),

@@ -5,7 +5,6 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  RelationId,
 } from 'typeorm';
 import { NewsItem } from 'src/news/entities/news-item.entity';
 
@@ -14,22 +13,26 @@ export class Interaction extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('datetime')
+  @Column({ type: 'datetime', name: 'Time of request' })
   requestTime: Date;
 
   @Column('int')
   facebookInteractions: number;
 
-  @Column('int')
+  @Column({ type: 'int', nullable: true })
   twitterInteractions: number;
 
+  @Column({ type: 'int', name: 'Audience time' })
+  audienceTime: number;
+
   @ManyToOne(() => NewsItem, (newsItem) => newsItem.interactions)
+  @JoinColumn({ name: 'articleId' })
   article: NewsItem;
 
-  @RelationId((interaction: Interaction) => interaction.article)
+  @Column({ name: 'articleId', type: 'int', nullable: true })
   articleId: number;
 
   public toString(): string {
-    return this.article.title;
+    return this.article.title + 'Test';
   }
 }

@@ -13,9 +13,7 @@ export class NewsService {
     @InjectRepository(NewsItem)
     private newsRepository: Repository<NewsItem>,
     private interactionsService: InteractionsService,
-  ) {
-    this.checkTheNewsDataBase();
-  }
+  ) {}
 
   async createIfNotExist(createDto: CreateNewsItemDto) {
     const { link } = createDto;
@@ -49,12 +47,11 @@ export class NewsService {
     return `This action removes a #${id} news`;
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  @Cron(CronExpression.EVERY_5_SECONDS)
   async checkTheNewsDataBase() {
     const newsItems = await this.findAll();
-
     newsItems.forEach((item) => {
-      this.interactionsService.processInteractions(item);
+      this.interactionsService.processNewsItem(item);
     });
   }
 }
