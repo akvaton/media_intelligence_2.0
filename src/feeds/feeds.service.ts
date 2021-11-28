@@ -53,7 +53,7 @@ export class FeedsService {
 
     feeds.forEach((feed) => {
       this.feedsQueue.add('parse', feed, {
-        repeat: { cron: CronExpression.EVERY_10_SECONDS },
+        repeat: { cron: CronExpression.EVERY_10_MINUTES },
         jobId: feed.id,
       });
     });

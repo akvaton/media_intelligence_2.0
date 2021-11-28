@@ -8,7 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Feed } from 'src/feeds/entities/feed.entity';
-import { Interaction } from '../../interactions/entities/interaction.entity';
+import { Interaction } from 'src/interactions/entities/interaction.entity';
 
 @Entity('articles')
 export class NewsItem extends BaseEntity {

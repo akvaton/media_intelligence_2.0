@@ -3,25 +3,10 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { Feed } from './entities/feed.entity';
 import { NewsService } from '../news/news.service';
-// import axios from 'axios';
 import { FeedsService } from './feeds.service';
 import { HttpService } from '@nestjs/axios';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// const iconv = require('iconv-lite');
-
-// TODO: Take a look https://www.npmjs.com/package/fast-xml-parser
-// axios.interceptors.response.use((response) => {
-//   const ctype = response.headers['content-type'];
-//
-//   if (ctype.includes('charset=windows-1251')) {
-//     response.data = iconv.decode(Buffer.from(response.data), 'windows-1251');
-//   } else {
-//     response.data = iconv.decode(Buffer.from(response.data), 'utf-8');
-//   }
-//   return response;
-// });
 
 @Processor('feeds')
 export class FeedsProcessor {

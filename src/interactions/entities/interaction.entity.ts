@@ -13,7 +13,7 @@ export class Interaction extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'datetime', name: 'Time of request' })
+  @Column({ type: 'timestamptz', name: 'Time of request' })
   requestTime: Date;
 
   @Column('int')

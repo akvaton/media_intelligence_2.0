@@ -5,9 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Interaction } from './entities/interaction.entity';
 import { BullModule } from '@nestjs/bull';
 import { InteractionsProcessor } from './interactions.processor';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     TypeOrmModule.forFeature([Interaction]),
     BullModule.registerQueue({
       name: 'interactions',
