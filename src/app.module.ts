@@ -22,11 +22,19 @@ AdminJS.registerAdapter({ Database, Resource });
     ConfigModule.forRoot(),
     ScheduleModule.forRoot(),
     BullModule.forRootAsync({
+      //redis://:pdcbbd44a475ac51d546091fbd9e415b58a05647acdd0cb4c1be9ad96169f3f9b@ec2-99-81-134-10.eu-west-1.compute.amazonaws.com:27509
       useFactory: () => {
+        const {
+          hostname: host,
+          port,
+          password,
+        } = new URL(process.env.REDIS_URL);
+
         return {
           redis: {
-            host: new URL(process.env.REDIS_URL).hostname,
-            port: Number(new URL(process.env.REDIS_URL).port),
+            host,
+            port: Number(port),
+            password,
           },
         };
       },
