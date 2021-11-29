@@ -22,4 +22,7 @@ module.exports = {
     'node_modules/nestjs-admin/**/*.entity.js',
   ],
   synchronize: true,
+  extra: {
+    ssl: true,
+  },
 };
