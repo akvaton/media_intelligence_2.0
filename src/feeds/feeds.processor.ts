@@ -46,7 +46,7 @@ export class FeedsProcessor {
       });
       this.logger.debug(`Parsing completed:  ${job.data.name}`);
     } catch (e) {
-      this.logger.error('Error', e);
+      this.logger.error(e);
     }
   }
 }

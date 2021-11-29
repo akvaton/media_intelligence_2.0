@@ -14,7 +14,7 @@ import { HttpModule } from '@nestjs/axios';
     BullModule.registerQueue({
       name: 'interactions',
       limiter: {
-        max: 100,
+        max: 200,
         duration: 1000 * 60 * 60,
       },
     }),

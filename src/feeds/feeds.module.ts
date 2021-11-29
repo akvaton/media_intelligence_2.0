@@ -7,6 +7,7 @@ import { Feed } from './entities/feed.entity';
 import { FeedsProcessor } from './feeds.processor';
 import { NewsModule } from '../news/news.module';
 import { HttpModule, HttpService } from '@nestjs/axios';
+import { FeedsSubscriber } from './feeds.subscriber';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const iconv = require('iconv-lite');
 
@@ -20,7 +21,7 @@ const iconv = require('iconv-lite');
     NewsModule,
   ],
   controllers: [FeedsController],
-  providers: [FeedsService, FeedsProcessor],
+  providers: [FeedsService, FeedsProcessor, FeedsSubscriber],
 })
 export class FeedsModule {
   constructor(private httpService: HttpService) {}
@@ -31,12 +32,12 @@ export class FeedsModule {
 
       if (ctype.includes('charset=windows-1251')) {
         response.data = iconv.decode(
-          // @ts-ignore
+          // @ts-expect-error TODO: Investigate, why
           Buffer.from(response.data),
           'windows-1251',
         );
       } else {
-        // @ts-ignore
+        // @ts-expect-error TODO: Investigate, why
         response.data = iconv.decode(Buffer.from(response.data), 'utf-8');
       }
       return response;

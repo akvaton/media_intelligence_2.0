@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { LessThan, Repository } from 'typeorm';
@@ -10,7 +11,6 @@ import { NewsItem } from '../news/entities/news-item.entity';
 import * as dayjs from 'dayjs';
 import { HttpService } from '@nestjs/axios';
 import { JSDOM } from 'jsdom';
-
 import {
   INTERACTIONS_PROCESSES_EVERY,
   INTERACTIONS_PROCESSES_LIMIT,
@@ -63,14 +63,41 @@ export class InteractionsService {
     });
   }
 
+  private getFacebookGraphData(interactions: Array<Interaction>) {
+    return  interactions.map(function (item, index){
+      let lnFacebookInteractions = Math.log(item.facebookInteractions);
+      let lnAudienceTime = index === 0 ? 0 : Math.log(item.audienceTime - interactions[0].audienceTime);
+
+      return {lnFacebookInteractions, lnAudienceTime};
+    });
+  }
+
+  private getFacebookRegressionCoefficient(facebookGraphData: Array<{lnFacebookInteractions: number, lnAudienceTime: number}>){
+    const result = facebookGraphData.reduce(
+      (accumulator, currentItem) => {
+        accumulator.xSum += currentItem.lnAudienceTime;
+        accumulator.ySum += currentItem.lnFacebookInteractions;
+        accumulator.xySum += currentItem.lnFacebookInteractions * currentItem.lnAudienceTime;
+        accumulator.x2Sum += Math.pow(currentItem.lnAudienceTime, 2);
+        accumulator.xAverage = accumulator.xSum / facebookGraphData.length;
+
+        return accumulator;
+      },
+      { xSum: 0, ySum: 0, xySum: 0, x2Sum: 0, xAverage: 0 }
+    );
+    const { xSum, ySum, xySum, x2Sum, xAverage } = result;
+
+    return (xSum / xAverage * xySum - xSum * ySum) / (xSum / xAverage * x2Sum - Math.pow(xSum, 2));
+  }
+
   // Facebook limitation 300 per 1 hour
   private async getFacebookInteractions(url: string) {
-    return 0;
     try {
       let facebookShares = 0;
-      const urlRequest = `https://graph.facebook.com/?id=${url}&fields=engagement,og_object&access_token=${process.env.FB_TOKEN}`;
+
+      const urlRequest = `https://graph.facebook.com/?id=${url}&fields=engagement&access_token=${process.env.FB_TOKEN}`;
       try {
-        const response = await this.httpService.get(urlRequest).toPromise();
+        const response = await axios.get(urlRequest);
 
         facebookShares = response.data.engagement.share_count;
       } catch (error) {
@@ -171,20 +198,18 @@ export class InteractionsService {
     try {
       this.logger.debug(`Processing the item started: ${newsItem.link}`);
       const dateOfRequest = dayjs(new Date()).startOf('minute').toDate();
-      const facebookInteractions = await this.getFacebookInteractions(
-        newsItem.link,
-      );
+      const [facebookInteractions, audienceTime] = await Promise.all([
+        this.getFacebookInteractions(newsItem.link),
+        this.getAudienceTime(newsItem, dateOfRequest),
+      ]);
       const interaction = new Interaction();
 
       interaction.requestTime = dateOfRequest;
       // interaction.twitterInteractions = twitterCount.meta.total_tweet_count;
       interaction.facebookInteractions = facebookInteractions;
-
-      interaction.audienceTime = await this.getAudienceTime(
-        newsItem,
-        dateOfRequest,
-      );
+      interaction.audienceTime = audienceTime;
       interaction.articleId = newsItem.id;
+
       await this.interactionsRepository.save(interaction);
       this.logger.debug(`Processing the item finished: ${newsItem.link}`);
     } catch (e) {
