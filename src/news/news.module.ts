@@ -5,6 +5,7 @@ import { NewsController } from './news.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NewsItem } from './entities/news-item.entity';
 import { InteractionsModule } from '../interactions/interactions.module';
+import { NewsSubscriber } from './news.subscriber';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { InteractionsModule } from '../interactions/interactions.module';
     InteractionsModule,
   ],
   controllers: [NewsController],
-  providers: [NewsService],
+  providers: [NewsService, NewsSubscriber],
   exports: [NewsService],
 })
 export class NewsModule {}

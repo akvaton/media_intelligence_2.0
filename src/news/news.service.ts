@@ -4,15 +4,14 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NewsItem } from './entities/news-item.entity';
-import { InteractionsService } from '../interactions/interactions.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
+// import { InteractionsService } from '../interactions/interactions.service';
+// import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class NewsService {
   constructor(
     @InjectRepository(NewsItem)
-    private newsRepository: Repository<NewsItem>,
-    private interactionsService: InteractionsService,
+    private newsRepository: Repository<NewsItem>, // private interactionsService: InteractionsService,
   ) {}
 
   async createIfNotExist(createDto: CreateNewsItemDto) {
@@ -47,11 +46,11 @@ export class NewsService {
     return `This action removes a #${id} news`;
   }
 
-  @Cron(CronExpression.EVERY_5_SECONDS)
-  async checkTheNewsDataBase() {
-    const newsItems = await this.findAll();
-    newsItems.forEach((item) => {
-      this.interactionsService.processNewsItem(item);
-    });
-  }
+  // @Cron(CronExpression.EVERY_30_SECONDS)
+  // async checkTheNewsDataBase() {
+  //   const newsItems = await this.findAll();
+  //   newsItems.forEach((item) => {
+  //     this.interactionsService.processNewsItem(item);
+  //   });
+  // }
 }

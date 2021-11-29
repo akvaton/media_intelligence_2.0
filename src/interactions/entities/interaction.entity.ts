@@ -29,10 +29,6 @@ export class Interaction extends BaseEntity {
   @JoinColumn({ name: 'articleId' })
   article: NewsItem;
 
-  @Column({ name: 'articleId', type: 'int', nullable: true })
+  @Column({ name: 'articleId', type: 'int' })
   articleId: number;
-
-  public toString(): string {
-    return this.article.title + 'Test';
-  }
 }

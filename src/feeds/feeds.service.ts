@@ -47,13 +47,13 @@ export class FeedsService {
     await this.feedsRepository.delete(id);
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async checkTheFeedsDataBase() {
     const feeds = await this.findAll();
 
     feeds.forEach((feed) => {
       this.feedsQueue.add('parse', feed, {
-        repeat: { cron: CronExpression.EVERY_10_MINUTES },
+        repeat: { cron: CronExpression.EVERY_5_MINUTES },
         jobId: feed.id,
       });
     });

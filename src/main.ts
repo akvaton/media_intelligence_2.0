@@ -6,7 +6,12 @@ import { BullAdapter } from 'bull-board/bullAdapter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const aQueue = app.get(`BullQueue_feeds`);
-  const { router: bullRouter } = createBullBoard([new BullAdapter(aQueue)]);
+  const bQueue = app.get(`BullQueue_interactions`);
+
+  const { router: bullRouter } = createBullBoard([
+    new BullAdapter(aQueue),
+    new BullAdapter(bQueue),
+  ]);
 
   app.use('/bull-board', bullRouter);
   app.enableShutdownHooks();

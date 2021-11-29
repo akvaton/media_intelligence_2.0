@@ -31,9 +31,14 @@ export class InteractionsProcessor {
 
   @Process('processInteractions')
   async handleParse(job: Job<NewsItem>) {
-    console.log('HANDLE processInteractions PARSE');
     this.logger.debug('Start processing interactions...', job.name);
     await this.interactionsService.processInteractions(job.data);
+
+    // @ts-expect-error as count is undocumented (?)
+    if (job.opts.repeat.count === job.opts.repeat.limit) {
+      await this.interactionsService.processTwitterInteractions(job.data);
+    }
+
     this.logger.debug('Parsing completed', job.name);
   }
 }
