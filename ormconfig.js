@@ -1,7 +1,4 @@
 // https://stackoverflow.com/questions/50093144/mysql-8-0-client-does-not-support-authentication-protocol-requested-by-server
-
-console.log('DATABASE URL', new URL(process.env.DATABASE_URL));
-
 const {
   username,
   password,
@@ -23,6 +20,6 @@ module.exports = {
   ],
   synchronize: true,
   extra: {
-    ssl: true,
+    // ssl: true,
   },
 };

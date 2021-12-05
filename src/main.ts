@@ -2,16 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { createBullBoard } from 'bull-board';
 import { BullAdapter } from 'bull-board/bullAdapter';
+import { FACEBOOK_QUEUE } from './config/constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const aQueue = app.get(`BullQueue_feeds`);
-  const bQueue = app.get(`BullQueue_interactions`);
-
-  const { router: bullRouter } = createBullBoard([
-    new BullAdapter(aQueue),
-    new BullAdapter(bQueue),
-  ]);
+  const queues = [`BullQueue_feeds`, `BullQueue_${FACEBOOK_QUEUE}`];
+  const { router: bullRouter } = createBullBoard(
+    queues.map((queueName) => {
+      return new BullAdapter(app.get(queueName));
+    }),
+  );
 
   app.use('/bull-board', bullRouter);
   app.enableShutdownHooks();

@@ -1,33 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
-import { UpdateNewsDto } from './dto/update-news.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NewsItem } from './entities/news-item.entity';
-// import { InteractionsService } from '../interactions/interactions.service';
-// import { Cron, CronExpression } from '@nestjs/schedule';
-
+import { In } from 'typeorm';
 @Injectable()
 export class NewsService {
   constructor(
     @InjectRepository(NewsItem)
-    private newsRepository: Repository<NewsItem>, // private interactionsService: InteractionsService,
+    private newsRepository: Repository<NewsItem>,
   ) {}
 
-  async createIfNotExist(createDto: CreateNewsItemDto) {
-    const { link } = createDto;
-    const item = await this.newsRepository.findOne({ link });
+  async createIfNotExist(items: Array<CreateNewsItemDto>, sourceId: number) {
+    const existingItems = await this.newsRepository.find({
+      link: In(items.map((item) => item.link)),
+    });
 
-    if (!item) {
-      const newsItem = new NewsItem();
+    const existingItemsMap = existingItems.reduce((acc, curr) => {
+      acc[curr.link] = true;
 
-      newsItem.link = createDto.link;
-      newsItem.source = createDto.source;
-      newsItem.title = createDto.title;
-      newsItem.pubDate = createDto.pubDate;
+      return acc;
+    }, {});
+    const entitiesToSave = items.reduce((acc, createDto) => {
+      if (!existingItemsMap[createDto.link]) {
+        const newsItem = new NewsItem();
 
-      await this.newsRepository.save(newsItem);
-    }
+        newsItem.link = createDto.link;
+        newsItem.sourceId = sourceId;
+        newsItem.title = createDto.title;
+        newsItem.pubDate = new Date(createDto.pubDate);
+        acc.push(newsItem);
+      }
+
+      return acc;
+    }, []);
+
+    return this.newsRepository.save(entitiesToSave);
   }
 
   findAll() {
@@ -37,20 +45,4 @@ export class NewsService {
   findOne(id: number) {
     return this.newsRepository.findOne(id);
   }
-
-  update(id: number, updateNewsDto: UpdateNewsDto) {
-    return `This action updates a #${id} news`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} news`;
-  }
-
-  // @Cron(CronExpression.EVERY_30_SECONDS)
-  // async checkTheNewsDataBase() {
-  //   const newsItems = await this.findAll();
-  //   newsItems.forEach((item) => {
-  //     this.interactionsService.processNewsItem(item);
-  //   });
-  // }
 }

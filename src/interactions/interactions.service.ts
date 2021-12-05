@@ -1,12 +1,11 @@
 import axios from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { LessThan, Repository } from 'typeorm';
+import { FindManyOptions, LessThan, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Interaction } from './entities/interaction.entity';
-import { InteractionDto } from './dto/interaction.dto';
 import { NewsItem } from '../news/entities/news-item.entity';
 import * as dayjs from 'dayjs';
 import { HttpService } from '@nestjs/axios';
@@ -14,98 +13,112 @@ import { JSDOM } from 'jsdom';
 import {
   INTERACTIONS_PROCESSES_EVERY,
   INTERACTIONS_PROCESSES_LIMIT,
-} from '../config/configuration';
+} from 'src/config/configuration';
+import { lastValueFrom } from 'rxjs';
+import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
 
 @Injectable()
 export class InteractionsService {
   private logger = new Logger(InteractionsService.name);
   private twitterClient = new TwitterApi(process.env.TWITTER_TOKEN).readOnly;
+
   constructor(
-    @InjectQueue('interactions')
-    private interactionsQueue: Queue,
+    @InjectQueue(FACEBOOK_QUEUE)
+    private facebookInteractionsQueue: Queue,
+    @InjectQueue(TWITTER_QUEUE)
+    private twitterInteractionsQueue: Queue,
     @InjectRepository(Interaction)
     private interactionsRepository: Repository<Interaction>,
     private httpService: HttpService,
   ) {
-    // interactionsQueue.getRepeatableJobs().then((jobs) => {
-    //   jobs.forEach((job) => {
-    //     interactionsQueue.removeRepeatableByKey(job.key);
-    //   });
-    // });
-  }
-  create(interactionDto: InteractionDto) {
-    return 'This action adds a new interaction';
-  }
-
-  findAll() {
-    return `This action returns all interactions`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} interaction`;
-  }
-
-  update(id: number, interactionDto: InteractionDto) {
-    return `This action updates a #${id} interaction`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} interaction`;
-  }
-
-  processNewsItem(newsItem: NewsItem) {
-    this.interactionsQueue.add('processInteractions', newsItem, {
-      repeat: {
-        every: INTERACTIONS_PROCESSES_EVERY,
-        limit: INTERACTIONS_PROCESSES_LIMIT,
-      },
-      jobId: newsItem.id,
+    facebookInteractionsQueue.getRepeatableJobs().then((jobs) => {
+      jobs.forEach((job) => {
+        facebookInteractionsQueue.removeRepeatableByKey(job.key);
+      });
+    });
+    twitterInteractionsQueue.getRepeatableJobs().then((jobs) => {
+      jobs.forEach((job) => {
+        twitterInteractionsQueue.removeRepeatableByKey(job.key);
+      });
     });
   }
 
-  private getFacebookGraphData(interactions: Array<Interaction>) {
-    return  interactions.map(function (item, index){
-      let lnFacebookInteractions = Math.log(item.facebookInteractions);
-      let lnAudienceTime = index === 0 ? 0 : Math.log(item.audienceTime - interactions[0].audienceTime);
+  enqueueFacebookInteractionsProcessing({ newsItem, repeatedTimes = 0 }) {
+    if (repeatedTimes !== INTERACTIONS_PROCESSES_LIMIT) {
+      this.facebookInteractionsQueue.add(
+        { newsItem, repeatedTimes },
+        {
+          jobId: newsItem.id,
+          delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
+        },
+      );
+    } else {
+      this.enqueueTwitterInteractionsProcessing(newsItem);
+    }
+  }
 
-      return {lnFacebookInteractions, lnAudienceTime};
+  getFacebookGraphData(interactions: Array<Interaction>) {
+    return interactions.map((item, index) => {
+      const lnFacebookInteractions = Math.log(item.facebookInteractions);
+      const lnAudienceTime = index
+        ? Math.log(item.audienceTime - interactions[0].audienceTime)
+        : 0;
+
+      return { lnFacebookInteractions, lnAudienceTime };
     });
   }
 
-  private getFacebookRegressionCoefficient(facebookGraphData: Array<{lnFacebookInteractions: number, lnAudienceTime: number}>){
+  getFacebookRegressionCoefficient(
+    facebookGraphData: Array<{
+      lnFacebookInteractions: number;
+      lnAudienceTime: number;
+    }>,
+  ) {
     const result = facebookGraphData.reduce(
       (accumulator, currentItem) => {
         accumulator.xSum += currentItem.lnAudienceTime;
         accumulator.ySum += currentItem.lnFacebookInteractions;
-        accumulator.xySum += currentItem.lnFacebookInteractions * currentItem.lnAudienceTime;
+        accumulator.xySum +=
+          currentItem.lnFacebookInteractions * currentItem.lnAudienceTime;
         accumulator.x2Sum += Math.pow(currentItem.lnAudienceTime, 2);
         accumulator.xAverage = accumulator.xSum / facebookGraphData.length;
 
         return accumulator;
       },
-      { xSum: 0, ySum: 0, xySum: 0, x2Sum: 0, xAverage: 0 }
+      { xSum: 0, ySum: 0, xySum: 0, x2Sum: 0, xAverage: 0 },
     );
     const { xSum, ySum, xySum, x2Sum, xAverage } = result;
 
-    return (xSum / xAverage * xySum - xSum * ySum) / (xSum / xAverage * x2Sum - Math.pow(xSum, 2));
+    return (
+      ((xSum / xAverage) * xySum - xSum * ySum) /
+      ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2))
+    );
   }
 
-  // Facebook limitation 300 per 1 hour
+  public enqueueTwitterInteractionsProcessing(newsItem: NewsItem) {
+    this.twitterInteractionsQueue.add(newsItem);
+  }
+
+  public async cancelEnqueuedJobsForNewsItem(newsItemId) {
+    const job = await this.facebookInteractionsQueue.getJob(newsItemId);
+    const isActive = await job?.isActive();
+
+    if (!isActive) {
+      await this.interactionsRepository.delete({ articleId: newsItemId });
+      return job.remove();
+    } else if (job && (await job.finished())) {
+      return this.cancelEnqueuedJobsForNewsItem(newsItemId);
+    }
+  }
+
   private async getFacebookInteractions(url: string) {
     try {
-      let facebookShares = 0;
-
       const urlRequest = `https://graph.facebook.com/?id=${url}&fields=engagement&access_token=${process.env.FB_TOKEN}`;
-      try {
-        const response = await axios.get(urlRequest);
+      const response = await axios.get(urlRequest);
 
-        facebookShares = response.data.engagement.share_count;
-      } catch (error) {
-        this.logger.error(error);
-      }
-      return facebookShares;
+      return response.data.engagement.share_count;
     } catch (e) {
-      this.logger.error('Error when trying to get Facebook shares', e);
+      this.logger.error(`Error while trying to get Facebook shares: ${e}`);
       throw e;
     }
   }
@@ -138,24 +151,22 @@ export class InteractionsService {
   }
 
   private async getHits() {
-    const responsePage = await this.httpService
-      .get('http://top.bigmir.net/', {
+    const responsePage$ = this.httpService.get<string>(
+      'http://top.bigmir.net/',
+      {
         responseType: 'text',
-      })
-      .toPromise();
-    const dom = new JSDOM(responsePage.data);
-
+      },
+    );
+    const responseHtml = (await lastValueFrom(responsePage$)).data;
+    const dom = new JSDOM(responseHtml);
     const hitsNumber = dom.window.document.querySelector(
-      '#container_main > div.page2.g-clearfix > div.doublecol.normal.fr > table:nth-child(3) > tbody > tr:nth-child(18) > td:nth-child(2)',
+      '#container_main > div.page2.g-clearfix > div.doublecol.normal.fr > table:nth-child(3) > tbody > tr:nth-child(18) > td:nth-child(3)',
     ).textContent;
 
     return parseInt(hitsNumber.replace(/\D/g, ''));
   }
 
   private async getAudienceTime(newsItem: NewsItem, dateOfRequest: Date) {
-    // First,  get the latest yesterday's record
-    // If it exist, add the latest yesterday's record's count to the parsed one
-    // otherwise just put the number to the database as it is
     try {
       const latestInteraction = await this.interactionsRepository.findOne({
         where: {
@@ -166,11 +177,7 @@ export class InteractionsService {
       });
       const hits = await this.getHits();
 
-      if (latestInteraction) {
-        return latestInteraction.audienceTime + hits;
-      } else {
-        return hits;
-      }
+      return (latestInteraction?.audienceTime ?? 0) + hits;
     } catch (e) {
       this.logger.error('Audience hits error', e);
       throw e;
@@ -194,9 +201,8 @@ export class InteractionsService {
     });
   }
 
-  async processInteractions(newsItem: NewsItem) {
+  async processFacebookInteractions(newsItem: NewsItem) {
     try {
-      this.logger.debug(`Processing the item started: ${newsItem.link}`);
       const dateOfRequest = dayjs(new Date()).startOf('minute').toDate();
       const [facebookInteractions, audienceTime] = await Promise.all([
         this.getFacebookInteractions(newsItem.link),
@@ -205,15 +211,22 @@ export class InteractionsService {
       const interaction = new Interaction();
 
       interaction.requestTime = dateOfRequest;
-      // interaction.twitterInteractions = twitterCount.meta.total_tweet_count;
       interaction.facebookInteractions = facebookInteractions;
       interaction.audienceTime = audienceTime;
       interaction.articleId = newsItem.id;
 
       await this.interactionsRepository.save(interaction);
-      this.logger.debug(`Processing the item finished: ${newsItem.link}`);
     } catch (e) {
       this.logger.error(e);
+      throw e;
     }
+  }
+
+  find(options: FindManyOptions<Interaction>) {
+    return this.interactionsRepository.find(options);
+  }
+
+  findOne(id: number) {
+    return this.interactionsRepository.findOne(id);
   }
 }

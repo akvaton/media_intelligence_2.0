@@ -1,10 +1,16 @@
-import { OnQueueActive, Process, Processor } from '@nestjs/bull';
+import {
+  OnQueueActive,
+  OnQueueCompleted,
+  Process,
+  Processor,
+} from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { Feed } from './entities/feed.entity';
 import { NewsService } from '../news/news.service';
 import { FeedsService } from './feeds.service';
 import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
 
@@ -20,31 +26,31 @@ export class FeedsProcessor {
   ) {}
 
   @OnQueueActive()
-  onActive({ id, name, data }: Job) {
-    this.logger.debug(
-      `Processing job "${name}" with id ${id} and data ${JSON.stringify(
-        data,
-      )}...`,
-    );
+  onActive({ data }: Job) {
+    this.logger.debug(`Parsing feed "${data.name}" with url ${data.url}...`);
+  }
+
+  @OnQueueCompleted()
+  onCompleted({ data }: Job) {
+    this.logger.debug(`Parsing completed: ${data.name}`);
   }
 
   @Process('parse')
   async handleParse(job: Job<Feed>) {
-    const { url, name } = job.data;
-    this.logger.debug(`Start parsing ${name}...`);
+    const { url } = job.data;
 
     try {
-      const feed = await this.httpService
+      const feedResponse$ = await this.httpService
         // @ts-expect-error as IDK why it is not documented
-        .get(url, { responseType: 'arraybuffer', responseEncoding: 'binary' })
-        .toPromise();
+        .get(url, { responseType: 'arraybuffer', responseEncoding: 'binary' });
+      const feedData = (await lastValueFrom(feedResponse$)).data;
+      const parsedFeedData = await this.parser.parseString(feedData);
 
-      const feedData = await this.parser.parseString(feed.data);
-      const source = await this.feedsService.findOne(job.data.id);
-      feedData.items.forEach((item) => {
-        this.newsService.createIfNotExist({ ...item, source });
-      });
-      this.logger.debug(`Parsing completed:  ${job.data.name}`);
+      this.logger.debug(`Parsed Feed Data For ${job.data.name}`);
+      await this.newsService.createIfNotExist(
+        parsedFeedData.items,
+        job.data.id,
+      );
     } catch (e) {
       this.logger.error(e);
     }

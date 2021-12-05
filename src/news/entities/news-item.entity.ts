@@ -6,6 +6,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Feed } from 'src/feeds/entities/feed.entity';
 import { Interaction } from 'src/interactions/entities/interaction.entity';
@@ -21,20 +22,36 @@ export class NewsItem extends BaseEntity {
   @Column()
   title: string;
 
-  @Column()
-  pubDate: string;
+  @Column({ type: 'timestamptz', name: 'Date of Publication', nullable: true })
+  pubDate: Date;
 
-  @ManyToOne(() => Feed, (feed) => feed.articles)
+  @ManyToOne(() => Feed, (feed) => feed.articles, {
+    onDelete: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
   @JoinColumn({ name: 'sourceId' })
   source: Feed;
 
-  @Column({ name: 'sourceId', type: 'int', nullable: true })
+  @Column({ name: 'sourceId', type: 'int', nullable: false })
   sourceId: number;
 
-  public toString(): string {
-    return this.title;
-  }
+  @Column({ default: 3 })
+  startIndex: number;
+
+  @Column({ default: 19 })
+  endIndex: number;
 
   @OneToMany(() => Interaction, (interaction) => interaction.article)
   interactions: Interaction[];
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
+
+  public twitterInteractions: number;
+
+  public facebookInteractions: number;
+
+  public facebookGraphData: Array<any>;
+
+  public facebookRegressionCoefficient: unknown;
 }

@@ -4,6 +4,5 @@ export class CreateNewsItemDto {
   title: string;
   link: string;
   pubDate: string;
-  source: Feed;
   sourceId: number;
 }

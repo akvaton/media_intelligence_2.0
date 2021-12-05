@@ -25,7 +25,10 @@ export class Interaction extends BaseEntity {
   @Column({ type: 'int', name: 'Audience time' })
   audienceTime: number;
 
-  @ManyToOne(() => NewsItem, (newsItem) => newsItem.interactions)
+  @ManyToOne(() => NewsItem, (newsItem) => newsItem.interactions, {
+    onDelete: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
   @JoinColumn({ name: 'articleId' })
   article: NewsItem;
 

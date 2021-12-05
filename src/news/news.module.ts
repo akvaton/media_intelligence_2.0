@@ -1,21 +1,20 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { NewsService } from './news.service';
-import { NewsController } from './news.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NewsItem } from './entities/news-item.entity';
 import { InteractionsModule } from '../interactions/interactions.module';
 import { NewsSubscriber } from './news.subscriber';
+import { FACEBOOK_QUEUE, TWITTER_QUEUE, NEWS_QUEUE } from '../config/constants';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([NewsItem]),
     BullModule.registerQueue({
-      name: 'news',
+      name: NEWS_QUEUE,
     }),
     InteractionsModule,
   ],
-  controllers: [NewsController],
   providers: [NewsService, NewsSubscriber],
   exports: [NewsService],
 })

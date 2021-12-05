@@ -47,7 +47,7 @@ export class FeedsService {
     await this.feedsRepository.delete(id);
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_10_SECONDS)
   async checkTheFeedsDataBase() {
     const feeds = await this.findAll();
 
