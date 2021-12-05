@@ -20,6 +20,6 @@ module.exports = {
   ],
   synchronize: true,
   extra: {
-    // ssl: true,
+    ssl: true,
   },
 };

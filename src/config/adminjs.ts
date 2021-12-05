@@ -2,9 +2,12 @@ import { Feed } from '../feeds/entities/feed.entity';
 import { NewsItem } from '../news/entities/news-item.entity';
 import { Interaction } from '../interactions/entities/interaction.entity';
 import AdminJS, { ActionContext, ActionRequest, NotFoundError } from 'adminjs';
+import { join } from 'path';
+// This export is needed to avoid dropping the file from the bundle
+import Export from './components/Export';
 
 export const ADMIN_JS_OPTIONS = {
-  rootPath: '/admin',
+  rootPath: '/',
   resources: [
     Feed,
     {
@@ -97,7 +100,9 @@ export const ADMIN_JS_OPTIONS = {
               }
               throw new Error('method should be either "post" or "get"');
             },
-            component: AdminJS.bundle('../components/Export'),
+            component: AdminJS.bundle(
+              join(__dirname, './components/Export.jsx'),
+            ),
           },
         },
         properties: {
@@ -107,6 +112,12 @@ export const ADMIN_JS_OPTIONS = {
           facebookInteractions: {
             isVisible: { list: true, filter: true, show: true, edit: false },
             type: 'number',
+            position: 1000,
+          },
+          twitterInteractions: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            type: 'number',
+            position: 1001,
           },
           facebookGraphData: {
             isVisible: false,

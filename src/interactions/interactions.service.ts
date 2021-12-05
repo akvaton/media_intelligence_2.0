@@ -14,6 +14,7 @@ import {
   INTERACTIONS_PROCESSES_EVERY,
   INTERACTIONS_PROCESSES_LIMIT,
 } from 'src/config/configuration';
+import { setupCache } from 'axios-cache-adapter';
 import { lastValueFrom } from 'rxjs';
 import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
 
@@ -21,7 +22,9 @@ import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
 export class InteractionsService {
   private logger = new Logger(InteractionsService.name);
   private twitterClient = new TwitterApi(process.env.TWITTER_TOKEN).readOnly;
-
+  private cache = setupCache({
+    maxAge: 5 * 60 * 1000,
+  });
   constructor(
     @InjectQueue(FACEBOOK_QUEUE)
     private facebookInteractionsQueue: Queue,
@@ -30,18 +33,7 @@ export class InteractionsService {
     @InjectRepository(Interaction)
     private interactionsRepository: Repository<Interaction>,
     private httpService: HttpService,
-  ) {
-    facebookInteractionsQueue.getRepeatableJobs().then((jobs) => {
-      jobs.forEach((job) => {
-        facebookInteractionsQueue.removeRepeatableByKey(job.key);
-      });
-    });
-    twitterInteractionsQueue.getRepeatableJobs().then((jobs) => {
-      jobs.forEach((job) => {
-        twitterInteractionsQueue.removeRepeatableByKey(job.key);
-      });
-    });
-  }
+  ) {}
 
   enqueueFacebookInteractionsProcessing({ newsItem, repeatedTimes = 0 }) {
     if (repeatedTimes !== INTERACTIONS_PROCESSES_LIMIT) {
@@ -155,6 +147,7 @@ export class InteractionsService {
       'http://top.bigmir.net/',
       {
         responseType: 'text',
+        adapter: this.cache.adapter,
       },
     );
     const responseHtml = (await lastValueFrom(responsePage$)).data;
