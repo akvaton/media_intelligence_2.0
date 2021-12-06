@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { InteractionsService } from './interactions.service';
-// import { InteractionsController } from './interactions.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Interaction } from './entities/interaction.entity';
 import { BullModule } from '@nestjs/bull';
@@ -8,12 +7,12 @@ import { TwitterInteractionsProcessor } from './consumers/twitter-interactions.p
 import { HttpModule } from '@nestjs/axios';
 import { FacebookInteractionsProcessor } from './consumers/facebook-interactions.processor';
 import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
-import { NewsModule } from '../news/news.module';
+import { NewsItem } from '../news/entities/news-item.entity';
 
 @Module({
   imports: [
     HttpModule,
-    TypeOrmModule.forFeature([Interaction]),
+    TypeOrmModule.forFeature([Interaction, NewsItem]),
     BullModule.registerQueue({
       name: FACEBOOK_QUEUE,
       limiter: {

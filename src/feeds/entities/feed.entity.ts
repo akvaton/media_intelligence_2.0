@@ -26,10 +26,9 @@ export class Feed extends BaseEntity {
   @OneToMany(() => NewsItem, (article) => article.source)
   articles: NewsItem[];
 
-  @Column({
-    type: 'enum',
-    enum: FeedOrigin,
-    default: FeedOrigin.UKRAINE,
-  })
-  origin: FeedOrigin;
+  @Column({ type: 'boolean', default: true })
+  trackFacebookInteractions: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  trackTwitterInteractions: boolean;
 }

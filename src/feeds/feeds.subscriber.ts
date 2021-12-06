@@ -3,6 +3,7 @@ import {
   EntitySubscriberInterface,
   EventSubscriber,
   InsertEvent,
+  RemoveEvent,
 } from 'typeorm';
 import { Feed } from './entities/feed.entity';
 import { InteractionsService } from '../interactions/interactions.service';

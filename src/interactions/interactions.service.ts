@@ -32,6 +32,8 @@ export class InteractionsService {
     private twitterInteractionsQueue: Queue,
     @InjectRepository(Interaction)
     private interactionsRepository: Repository<Interaction>,
+    @InjectRepository(NewsItem)
+    private newsRepository: Repository<NewsItem>,
     private httpService: HttpService,
   ) {}
 
@@ -208,7 +210,12 @@ export class InteractionsService {
       interaction.audienceTime = audienceTime;
       interaction.articleId = newsItem.id;
 
-      await this.interactionsRepository.save(interaction);
+      await Promise.all([
+        this.interactionsRepository.save(interaction),
+        this.newsRepository.update(newsItem.id, {
+          facebookInteractions,
+        }),
+      ]);
     } catch (e) {
       this.logger.error(e);
       throw e;
@@ -219,7 +226,7 @@ export class InteractionsService {
     return this.interactionsRepository.find(options);
   }
 
-  findOne(id: number) {
-    return this.interactionsRepository.findOne(id);
+  findOne(idOrOptions) {
+    return this.interactionsRepository.findOne(idOrOptions);
   }
 }

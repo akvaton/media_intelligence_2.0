@@ -47,9 +47,11 @@ export class NewsItem extends BaseEntity {
   @DeleteDateColumn()
   deletedAt?: Date;
 
-  public twitterInteractions: number;
+  @Column({ nullable: true })
+  twitterInteractions: number;
 
-  public facebookInteractions: number;
+  @Column({ nullable: true })
+  facebookInteractions: number;
 
   public facebookGraphData: Array<any>;
 

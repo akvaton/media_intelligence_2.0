@@ -37,16 +37,14 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
   async afterLoad(newsItem: NewsItem): Promise<void> {
     const interactions = await this.interactionsService.find({
       where: { articleId: newsItem.id },
-      order: { id: 'DESC' },
+      order: { id: 'ASC' },
     });
 
-    newsItem.twitterInteractions = interactions.at(-1)?.twitterInteractions;
-    newsItem.facebookInteractions = interactions.at(-1)?.facebookInteractions;
     newsItem.facebookGraphData =
-      this.interactionsService.getFacebookGraphData(interactions);
+      this.interactionsService.getFacebookGraphData(interactions) || [];
     newsItem.facebookRegressionCoefficient =
       this.interactionsService.getFacebookRegressionCoefficient(
         newsItem.facebookGraphData,
-      );
+      ) || 0;
   }
 }

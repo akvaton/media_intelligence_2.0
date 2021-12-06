@@ -5,15 +5,26 @@ import AdminJS, { ActionContext, ActionRequest, NotFoundError } from 'adminjs';
 import { join } from 'path';
 // This export is needed to avoid dropping the file from the bundle
 import Export from './components/Export';
+import FacebookData from './components/FacebookData';
+import ListAction from './custom-news-item-list';
 
 export const ADMIN_JS_OPTIONS = {
   rootPath: '/',
   resources: [
-    Feed,
+    {
+      resource: Feed,
+      options: {
+        parent: null,
+      },
+    },
     {
       resource: NewsItem,
       options: {
+        parent: null,
         actions: {
+          list: {
+            handler: ListAction.handler,
+          },
           bulkDelete: {
             handler: async (
               request: ActionRequest,
@@ -109,18 +120,29 @@ export const ADMIN_JS_OPTIONS = {
           deletedAt: {
             isVisible: false,
           },
+          interactions: {
+            type: 'mixed',
+          },
           facebookInteractions: {
             isVisible: { list: true, filter: true, show: true, edit: false },
             type: 'number',
             position: 1000,
+            // components: AdminJS.bundle(
+            //   join(__dirname, './components/FacebookInteractions.tsx'),
+            // ),
           },
           twitterInteractions: {
             isVisible: { list: true, filter: true, show: true, edit: false },
-            type: 'number',
+            type: 'mixed',
             position: 1001,
           },
           facebookGraphData: {
-            isVisible: false,
+            isVisible: { show: true },
+            components: {
+              show: AdminJS.bundle(
+                join(__dirname, './components/FacebookData.jsx'),
+              ),
+            },
           },
           startIndex: {
             isVisible: { list: false, filter: false, show: true, edit: true },
@@ -136,7 +158,12 @@ export const ADMIN_JS_OPTIONS = {
         },
       },
     },
-    Interaction,
+    {
+      resource: Interaction,
+      options: {
+        parent: null,
+      },
+    },
   ],
   branding: {
     logo: false as const,

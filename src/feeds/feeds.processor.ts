@@ -1,11 +1,12 @@
 import {
+  InjectQueue,
   OnQueueActive,
   OnQueueCompleted,
   Process,
   Processor,
 } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
+import { Job, Queue } from 'bull';
 import { Feed } from './entities/feed.entity';
 import { NewsService } from '../news/news.service';
 import { FeedsService } from './feeds.service';
@@ -23,6 +24,8 @@ export class FeedsProcessor {
     private newsService: NewsService,
     private feedsService: FeedsService,
     private httpService: HttpService,
+    @InjectQueue('feeds')
+    private feedsQueue: Queue,
   ) {}
 
   @OnQueueActive()
@@ -37,22 +40,35 @@ export class FeedsProcessor {
 
   @Process('parse')
   async handleParse(job: Job<Feed>) {
-    const { url } = job.data;
+    const { url, id } = job.data;
+    const feed = await this.feedsService.findOne(id);
 
-    try {
-      const feedResponse$ = await this.httpService
-        // @ts-expect-error as IDK why it is not documented
-        .get(url, { responseType: 'arraybuffer', responseEncoding: 'binary' });
-      const feedData = (await lastValueFrom(feedResponse$)).data;
-      const parsedFeedData = await this.parser.parseString(feedData);
+    if (!feed) {
+      this.feedsQueue.getRepeatableJobs().then((repeatableJobs) => {
+        const repeatable = repeatableJobs.find((item) => Number(item.id) == id);
 
-      this.logger.debug(`Parsed Feed Data For ${job.data.name}`);
-      await this.newsService.createIfNotExist(
-        parsedFeedData.items,
-        job.data.id,
-      );
-    } catch (e) {
-      this.logger.error(e);
+        if (repeatable) {
+          this.feedsQueue.removeRepeatableByKey(repeatable.key);
+        }
+      });
+    } else {
+      try {
+        const feedResponse$ = await this.httpService.get(url, {
+          responseType: 'arraybuffer',
+          // @ts-expect-error as IDK why it is not documented
+          responseEncoding: 'binary',
+        });
+        const feedData = (await lastValueFrom(feedResponse$)).data;
+        const parsedFeedData = await this.parser.parseString(feedData);
+
+        this.logger.debug(`Parsed Feed Data For ${job.data.name}`);
+        await this.newsService.createIfNotExist(
+          parsedFeedData.items,
+          job.data.id,
+        );
+      } catch (e) {
+        this.logger.error(e);
+      }
     }
   }
 }
