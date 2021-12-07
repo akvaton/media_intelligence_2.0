@@ -2,11 +2,6 @@ import { Feed } from '../feeds/entities/feed.entity';
 import { NewsItem } from '../news/entities/news-item.entity';
 import { Interaction } from '../interactions/entities/interaction.entity';
 import AdminJS, { ActionContext, ActionRequest, NotFoundError } from 'adminjs';
-import { join } from 'path';
-// This export is needed to avoid dropping the file from the bundle
-import Export from './components/Export';
-import FacebookData from './components/FacebookData';
-import Dashboard from './components/Dashboard';
 import ListAction from './utils/custom-news-item-list';
 import { bulkDeleteHandler } from './resources/news-item';
 
@@ -69,7 +64,9 @@ export const ADMIN_JS_OPTIONS = {
               }
               throw new Error('method should be either "post" or "get"');
             },
-            component: AdminJS.bundle('./components/Export.js'),
+            component: AdminJS.bundle(
+              '../../src/adminjs/components/Export.jsx',
+            ),
           },
         },
         properties: {
@@ -104,7 +101,9 @@ export const ADMIN_JS_OPTIONS = {
             isVirtual: true,
             isVisible: { show: true },
             components: {
-              show: AdminJS.bundle('./components/FacebookData.js'),
+              show: AdminJS.bundle(
+                '../../src/adminjs/components/FacebookData.jsx',
+              ),
             },
           },
           startIndex: {
@@ -135,6 +134,6 @@ export const ADMIN_JS_OPTIONS = {
     favicon: 'https://twemoji.maxcdn.com/2/svg/1f4e3.svg',
   },
   dashboard: {
-    component: AdminJS.bundle('./components/Dashboard.tsx'),
+    component: AdminJS.bundle('../../src/adminjs/components/Dashboard.jsx'),
   },
 };
