@@ -22,8 +22,14 @@ export class FacebookInteractionsProcessor {
   }
 
   @OnQueueCompleted()
-  onCompleted({ id }: Job) {
-    this.logger.debug(`Completed job with id: ${id}!`);
+  onCompleted({ id, data }: Job) {
+    this.logger.debug(
+      `Completed job with id: ${id} data ${JSON.stringify(data)}!`,
+    );
+    this.interactionsService.enqueueFacebookInteractionsProcessing({
+      newsItem: data.newsItem,
+      repeatedTimes: data.repeatedTimes + 1,
+    });
   }
 
   @Process()
@@ -33,10 +39,5 @@ export class FacebookInteractionsProcessor {
     const { newsItem, repeatedTimes } = job.data;
 
     await this.interactionsService.processFacebookInteractions(newsItem);
-
-    this.interactionsService.enqueueFacebookInteractionsProcessing({
-      newsItem,
-      repeatedTimes: repeatedTimes + 1,
-    });
   }
 }

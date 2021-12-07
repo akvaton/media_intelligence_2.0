@@ -1,10 +1,9 @@
 import * as flat from 'flat';
 import { Action, ActionContext, ActionResponse } from 'adminjs';
-import Filter from './adminjs/filter';
-import { populator } from './adminjs/populator';
-import sortSetter from './adminjs/sort-setter';
-import { In, MoreThan } from 'typeorm';
-// import { RecordJSON } from '../../../frontend/interfaces';
+import Filter from './filter';
+import { populator } from './populator';
+import sortSetter from './sort-setter';
+import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
 const PER_PAGE_LIMIT = 500;
 /**
@@ -38,7 +37,7 @@ export const ListAction = {
     if (perPage) {
       perPage = +perPage > PER_PAGE_LIMIT ? PER_PAGE_LIMIT : +perPage;
     } else {
-      perPage = 10; // default
+      perPage = 100; // default
     }
     page = Number(page) || 1;
     const listProperties = resource.decorate().getListProperties();
@@ -51,18 +50,30 @@ export const ListAction = {
         resource.decorate().options,
       );
     }
-    // filters['facebookInteractions'] = 1;
-    const filter = await new Filter(filters, resource).populate();
+    const { minFacebookInteractions, maxFacebookInteractions, ...filtersData } =
+      filters;
 
-    if (filters.facebookInteractions) {
-      // @ts-ignore
-      filter.filters['facebookInteractions'].custom = {
-        where: { id: MoreThan(10) },
-      };
+    if (minFacebookInteractions || maxFacebookInteractions) {
+      filtersData.facebookInteractions = true;
     }
-    // filter.filters['facebookInteractions'].custom = MoreThan(0);
+    const filter = await new Filter(filtersData, resource).populate();
 
-    // @ts-ignore
+    if (minFacebookInteractions && maxFacebookInteractions) {
+      filter.filters['facebookInteractions'].custom = Between(
+        minFacebookInteractions,
+        maxFacebookInteractions,
+      );
+    } else if (minFacebookInteractions) {
+      filter.filters['facebookInteractions'].custom = MoreThanOrEqual(
+        minFacebookInteractions,
+      );
+    } else if (maxFacebookInteractions) {
+      filter.filters['facebookInteractions'].custom = LessThanOrEqual(
+        maxFacebookInteractions,
+      );
+    }
+
+    // @ts-expect-error Poor documentation
     const records = await resource.find(filter, {
       limit: perPage,
       offset: (page - 1) * perPage,
@@ -71,7 +82,7 @@ export const ListAction = {
     const populatedRecords = await populator(records);
     // eslint-disable-next-line no-param-reassign
     context.records = populatedRecords;
-    // @ts-ignore
+    // @ts-expect-error Poor documentation
     const total = await resource.count(filter);
     return {
       meta: {

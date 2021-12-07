@@ -6,7 +6,9 @@ import { join } from 'path';
 // This export is needed to avoid dropping the file from the bundle
 import Export from './components/Export';
 import FacebookData from './components/FacebookData';
-import ListAction from './custom-news-item-list';
+import Dashboard from './components/Dashboard';
+import ListAction from './utils/custom-news-item-list';
+import { bulkDeleteHandler } from './resources/news-item';
 
 export const ADMIN_JS_OPTIONS = {
   rootPath: '/',
@@ -20,60 +22,17 @@ export const ADMIN_JS_OPTIONS = {
     {
       resource: NewsItem,
       options: {
+        sort: {
+          direction: 'desc',
+          sortBy: 'id',
+        },
         parent: null,
         actions: {
           list: {
             handler: ListAction.handler,
           },
           bulkDelete: {
-            handler: async (
-              request: ActionRequest,
-              response,
-              context: ActionContext,
-            ) => {
-              const { records, resource, h, translateMessage } = context;
-
-              if (!records || !records.length) {
-                throw new NotFoundError(
-                  'no records were selected.',
-                  'Action#handler',
-                );
-              }
-              if (request.method === 'get') {
-                const recordsInJSON = records.map((record) =>
-                  record.toJSON(context.currentAdmin),
-                );
-                return {
-                  records: recordsInJSON,
-                };
-              }
-              if (request.method === 'post') {
-                await Promise.all(
-                  records.map((record) =>
-                    record.update({ deletedAt: new Date() }),
-                  ),
-                );
-                return {
-                  records: records.map((record) =>
-                    record.toJSON(context.currentAdmin),
-                  ),
-                  notice: {
-                    message: translateMessage(
-                      'successfullyBulkDeleted',
-                      resource.id(),
-                      {
-                        count: records.length,
-                      },
-                    ),
-                    type: 'success',
-                  },
-                  redirectUrl: h.resourceUrl({
-                    resourceId: resource._decorated?.id() || resource.id(),
-                  }),
-                };
-              }
-              throw new Error('method should be either "post" or "get"');
-            },
+            handler: bulkDeleteHandler,
           },
           exportData: {
             icon: 'View',
@@ -83,8 +42,7 @@ export const ADMIN_JS_OPTIONS = {
               response,
               context: ActionContext,
             ) => {
-              const { records, resource, h, translateMessage } = context;
-
+              const { records, resource, h } = context;
               if (!records || !records.length) {
                 throw new NotFoundError(
                   'no records were selected.',
@@ -111,37 +69,42 @@ export const ADMIN_JS_OPTIONS = {
               }
               throw new Error('method should be either "post" or "get"');
             },
-            component: AdminJS.bundle(
-              join(__dirname, './components/Export.jsx'),
-            ),
+            component: AdminJS.bundle('./components/Export.js'),
           },
         },
         properties: {
           deletedAt: {
             isVisible: false,
           },
-          interactions: {
-            type: 'mixed',
-          },
           facebookInteractions: {
-            isVisible: { list: true, filter: true, show: true, edit: false },
+            isVisible: { list: true, filter: false, show: true, edit: false },
             type: 'number',
             position: 1000,
-            // components: AdminJS.bundle(
-            //   join(__dirname, './components/FacebookInteractions.tsx'),
-            // ),
+          },
+          minFacebookInteractions: {
+            isVisible: { filter: true },
+          },
+          maxFacebookInteractions: {
+            isVisible: { filter: true },
           },
           twitterInteractions: {
-            isVisible: { list: true, filter: true, show: true, edit: false },
-            type: 'mixed',
+            isVisible: { list: true, filter: false, show: true, edit: false },
+            type: 'number',
             position: 1001,
           },
+          minTwitterInteractions: {
+            isVisible: { filter: true },
+            type: 'number',
+          },
+          maxTwitterInteractions: {
+            isVisible: { filter: true },
+          },
           facebookGraphData: {
+            isArray: true,
+            isVirtual: true,
             isVisible: { show: true },
             components: {
-              show: AdminJS.bundle(
-                join(__dirname, './components/FacebookData.jsx'),
-              ),
+              show: AdminJS.bundle('./components/FacebookData.js'),
             },
           },
           startIndex: {
@@ -153,7 +116,8 @@ export const ADMIN_JS_OPTIONS = {
             type: 'number',
           },
           id: {
-            isVisible: false,
+            // isVisible: false,
+            isId: true,
           },
         },
       },
@@ -167,6 +131,10 @@ export const ADMIN_JS_OPTIONS = {
   ],
   branding: {
     logo: false as const,
-    companyName: '',
+    companyName: 'Mediarozvidka 2.0',
+    favicon: 'https://twemoji.maxcdn.com/2/svg/1f4e3.svg',
+  },
+  dashboard: {
+    component: AdminJS.bundle('./components/Dashboard.tsx'),
   },
 };

@@ -53,7 +53,7 @@ export class NewsItem extends BaseEntity {
   @Column({ nullable: true })
   facebookInteractions: number;
 
-  public facebookGraphData: Array<any>;
+  public facebookGraphData: Array<{ lnFacebookInteractions; lnAudienceTime }>;
 
   public facebookRegressionCoefficient: unknown;
 }

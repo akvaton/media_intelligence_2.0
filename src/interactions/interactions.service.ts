@@ -17,6 +17,8 @@ import {
 import { setupCache } from 'axios-cache-adapter';
 import { lastValueFrom } from 'rxjs';
 import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
+import { ObjectID } from 'typeorm/driver/mongodb/typings';
+import { FindConditions } from 'typeorm/find-options/FindConditions';
 
 @Injectable()
 export class InteractionsService {
@@ -38,10 +40,15 @@ export class InteractionsService {
   ) {}
 
   enqueueFacebookInteractionsProcessing({ newsItem, repeatedTimes = 0 }) {
+    this.logger.debug(
+      `enqueueFacebookInteractionsProcessing ${newsItem.id} ${repeatedTimes}`,
+    );
+
     if (repeatedTimes !== INTERACTIONS_PROCESSES_LIMIT) {
       this.facebookInteractionsQueue.add(
         { newsItem, repeatedTimes },
         {
+          removeOnComplete: true,
           jobId: newsItem.id,
           delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
         },
@@ -52,11 +59,12 @@ export class InteractionsService {
   }
 
   getFacebookGraphData(interactions: Array<Interaction>) {
-    return interactions.map((item, index) => {
-      const lnFacebookInteractions = Math.log(item.facebookInteractions);
-      const lnAudienceTime = index
-        ? Math.log(item.audienceTime - interactions[0].audienceTime)
+    return interactions.map((item) => {
+      const audienceTime = item.audienceTime - interactions[0].audienceTime;
+      const lnFacebookInteractions = item.facebookInteractions
+        ? Math.log(item.facebookInteractions)
         : 0;
+      const lnAudienceTime = audienceTime ? Math.log(audienceTime) : 0;
 
       return { lnFacebookInteractions, lnAudienceTime };
     });
@@ -97,7 +105,7 @@ export class InteractionsService {
     const job = await this.facebookInteractionsQueue.getJob(newsItemId);
     const isActive = await job?.isActive();
 
-    if (!isActive) {
+    if (job && !isActive) {
       await this.interactionsRepository.delete({ articleId: newsItemId });
       return job.remove();
     } else if (job && (await job.finished())) {
@@ -228,5 +236,20 @@ export class InteractionsService {
 
   findOne(idOrOptions) {
     return this.interactionsRepository.findOne(idOrOptions);
+  }
+
+  delete(
+    criteria:
+      | string
+      | string[]
+      | number
+      | number[]
+      | Date
+      | Date[]
+      | ObjectID
+      | ObjectID[]
+      | FindConditions<Interaction>,
+  ) {
+    return this.interactionsRepository.delete(criteria);
   }
 }

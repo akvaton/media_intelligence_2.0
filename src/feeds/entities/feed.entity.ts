@@ -5,12 +5,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { NewsItem } from '../../news/entities/news-item.entity';
-
-export enum FeedOrigin {
-  UKRAINE = 'UKR',
-  US = 'USA',
-}
+import { NewsItem } from 'src/news/entities/news-item.entity';
 
 @Entity()
 export class Feed extends BaseEntity {
@@ -25,10 +20,4 @@ export class Feed extends BaseEntity {
 
   @OneToMany(() => NewsItem, (article) => article.source)
   articles: NewsItem[];
-
-  @Column({ type: 'boolean', default: true })
-  trackFacebookInteractions: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  trackTwitterInteractions: boolean;
 }

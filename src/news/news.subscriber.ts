@@ -27,10 +27,10 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
     });
   }
 
-  afterUpdate(event: UpdateEvent<NewsItem>) {
+  async afterUpdate(event: UpdateEvent<NewsItem>) {
     if (event.entity?.deletedAt) {
       this.interactionsService.cancelEnqueuedJobsForNewsItem(event.entity);
-      // TODO this.interactionsService remove all interactions
+      this.interactionsService.delete({ articleId: event.entity.id });
     }
   }
 

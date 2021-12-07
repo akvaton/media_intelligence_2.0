@@ -9,7 +9,7 @@ import { InteractionsModule } from './interactions/interactions.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NewsModule } from './news/news.module';
 import { ConfigModule } from '@nestjs/config';
-import { ADMIN_JS_OPTIONS } from './config/adminjs';
+import { ADMIN_JS_OPTIONS } from './adminjs';
 
 AdminJS.registerAdapter({ Database, Resource });
 

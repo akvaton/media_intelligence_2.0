@@ -1,5 +1,6 @@
 import * as flat from 'flat';
 import { BaseProperty, BaseRecord, BaseResource } from 'adminjs';
+import { FindOperator } from 'typeorm';
 
 export const PARAM_SEPARATOR = '~~';
 
@@ -13,6 +14,7 @@ export type FilterElement = {
         to: string;
       };
   populated?: BaseRecord | null;
+  custom?: FindOperator<any>;
 };
 
 interface ReduceCallback<T> {
