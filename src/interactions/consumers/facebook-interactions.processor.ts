@@ -23,9 +23,7 @@ export class FacebookInteractionsProcessor {
 
   @OnQueueCompleted()
   onCompleted({ id, data }: Job) {
-    this.logger.debug(
-      `Completed job with id: ${id} data ${JSON.stringify(data)}!`,
-    );
+    this.logger.debug(`Completed job with id: ${id}!`);
     this.interactionsService.enqueueFacebookInteractionsProcessing({
       newsItem: data.newsItem,
       repeatedTimes: data.repeatedTimes + 1,

@@ -1,22 +1,25 @@
 import React, { useEffect } from 'react';
-import set from 'lodash.set';
+import { useHistory } from 'react-router-dom';
 
 const ExportInteractions = (props) => {
-  const records = props.records.map((record) => {
-    const object = {};
+  const history = useHistory();
 
-    Object.entries(record.params).forEach(([key, value]) => {
-      set(object, key, value);
-    });
-
-    return object;
-  });
   useEffect(() => {
-    console.log(
-      'Records',
-      props.records.map((record) => record.params),
-    );
-    //  TODO: Redirect to props.resource.href
+    const newsData = props.records.map(({ params }) => {
+      const { title, link, facebookRegressionCoefficient } = params;
+
+      return {
+        title,
+        link,
+        facebookRegressionCoefficient,
+      };
+    });
+    const workSheet = XLSX.utils.json_to_sheet(newsData);
+    const workBook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workBook, workSheet, 'newsData');
+    XLSX.writeFile(workBook, 'newsData.xlsx');
+    history.goBack();
   }, [records]);
 
   return <pre>{JSON.stringify(records, null, ' ')}</pre>;

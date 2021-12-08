@@ -40,10 +40,6 @@ export class InteractionsService {
   ) {}
 
   enqueueFacebookInteractionsProcessing({ newsItem, repeatedTimes = 0 }) {
-    this.logger.debug(
-      `enqueueFacebookInteractionsProcessing ${newsItem.id} ${repeatedTimes}`,
-    );
-
     if (repeatedTimes !== INTERACTIONS_PROCESSES_LIMIT) {
       this.facebookInteractionsQueue.add(
         { newsItem, repeatedTimes },
@@ -52,6 +48,8 @@ export class InteractionsService {
           jobId: newsItem.id,
           timeout: 1000 * 5,
           delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
+          attempts: 3,
+          backoff: { type: 'fixed', delay: 1000 * 60 },
         },
       );
     } else {
@@ -114,12 +112,16 @@ export class InteractionsService {
     }
   }
 
-  private async getFacebookInteractions(url: string) {
+  private async getFacebookInteractions(newsItem: NewsItem) {
     try {
-      const urlRequest = `https://graph.facebook.com/?id=${url}&fields=engagement&access_token=${process.env.FB_TOKEN}`;
+      const urlRequest = `https://graph.facebook.com/?id=${newsItem.link}&fields=engagement&access_token=${process.env.FB_TOKEN}`;
       const response = await axios.get(urlRequest);
+      const shareCount = response.data.engagement.share_count;
 
-      return response.data.engagement.share_count;
+      this.logger.debug(
+        `Facebook interactions for ${newsItem.id}: ${shareCount}`,
+      );
+      return shareCount;
     } catch (e) {
       this.logger.error(`Error while trying to get Facebook shares: ${e}`);
       throw e;
@@ -180,8 +182,10 @@ export class InteractionsService {
         order: { requestTime: 'DESC' },
       });
       const hits = await this.getHits();
+      const resultHits = (latestInteraction?.audienceTime ?? 0) + hits;
+      this.logger.debug(`Audience hits for ${newsItem.id}: ${resultHits}`);
 
-      return (latestInteraction?.audienceTime ?? 0) + hits;
+      return resultHits;
     } catch (e) {
       this.logger.error('Audience hits error', e);
       throw e;
@@ -209,7 +213,7 @@ export class InteractionsService {
     try {
       const dateOfRequest = dayjs(new Date()).startOf('minute').toDate();
       const [facebookInteractions, audienceTime] = await Promise.all([
-        this.getFacebookInteractions(newsItem.link),
+        this.getFacebookInteractions(newsItem),
         this.getAudienceTime(newsItem, dateOfRequest),
       ]);
       const interaction = new Interaction();
@@ -220,10 +224,18 @@ export class InteractionsService {
       interaction.articleId = newsItem.id;
 
       await Promise.all([
-        this.interactionsRepository.save(interaction),
-        this.newsRepository.update(newsItem.id, {
-          facebookInteractions,
+        this.interactionsRepository.save(interaction).then(() => {
+          this.logger.debug(`Interaction saved for ${newsItem.id}`);
         }),
+        this.newsRepository
+          .update(newsItem.id, {
+            facebookInteractions,
+          })
+          .then(() => {
+            this.logger.debug(
+              `Facebook interactions updated for ${newsItem.id}`,
+            );
+          }),
       ]);
     } catch (e) {
       this.logger.error(e);
@@ -233,10 +245,6 @@ export class InteractionsService {
 
   find(options: FindManyOptions<Interaction>) {
     return this.interactionsRepository.find(options);
-  }
-
-  findOne(idOrOptions) {
-    return this.interactionsRepository.findOne(idOrOptions);
   }
 
   delete(

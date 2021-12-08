@@ -29,8 +29,10 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
 
   async afterUpdate(event: UpdateEvent<NewsItem>) {
     if (event.entity?.deletedAt) {
-      this.interactionsService.cancelEnqueuedJobsForNewsItem(event.entity);
-      this.interactionsService.delete({ articleId: event.entity.id });
+      await Promise.all([
+        this.interactionsService.cancelEnqueuedJobsForNewsItem(event.entity),
+        this.interactionsService.delete({ articleId: event.entity.id }),
+      ]);
     }
   }
 

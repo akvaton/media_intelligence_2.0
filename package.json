@@ -52,7 +52,8 @@
     "rss-parser": "^3.12.0",
     "rxjs": "^7.2.0",
     "twitter-api-v2": "^1.7.0",
-    "typeorm": "~0.2.41"
+    "typeorm": "~0.2.41",
+    "xlsx": "^0.17.4"
   },
   "devDependencies": {
     "@nestjs/cli": "~8.1.5",

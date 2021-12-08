@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NewsItem } from './entities/news-item.entity';
 import { In } from 'typeorm';
+
 @Injectable()
 export class NewsService {
   constructor(

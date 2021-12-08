@@ -1,12 +1,23 @@
 import { Feed } from '../feeds/entities/feed.entity';
 import { NewsItem } from '../news/entities/news-item.entity';
 import { Interaction } from '../interactions/entities/interaction.entity';
-import AdminJS, { ActionContext, ActionRequest, NotFoundError } from 'adminjs';
+import AdminJS, {
+  ActionContext,
+  ActionRequest,
+  AdminJSOptions,
+  NotFoundError,
+} from 'adminjs';
 import ListAction from './utils/custom-news-item-list';
 import { bulkDeleteHandler } from './resources/news-item';
 
-export const ADMIN_JS_OPTIONS = {
+export const ADMIN_JS_OPTIONS: AdminJSOptions = {
   rootPath: '/',
+  assets: {
+    scripts: [
+      'https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js',
+      'https://code.highcharts.com/highcharts.js',
+    ],
+  },
   resources: [
     {
       resource: Feed,
@@ -23,9 +34,7 @@ export const ADMIN_JS_OPTIONS = {
         },
         parent: null,
         actions: {
-          list: {
-            handler: ListAction.handler,
-          },
+          list: ListAction,
           bulkDelete: {
             handler: bulkDeleteHandler,
           },
@@ -97,14 +106,13 @@ export const ADMIN_JS_OPTIONS = {
             isVisible: { filter: true },
           },
           facebookGraphData: {
-            isArray: true,
-            isVirtual: true,
             isVisible: { show: true },
             components: {
               show: AdminJS.bundle(
                 '../../src/adminjs/components/FacebookData.jsx',
               ),
             },
+            position: 999,
           },
           startIndex: {
             isVisible: { list: false, filter: false, show: true, edit: true },
@@ -114,9 +122,8 @@ export const ADMIN_JS_OPTIONS = {
             isVisible: { list: false, filter: false, show: true, edit: true },
             type: 'number',
           },
-          id: {
-            // isVisible: false,
-            isId: true,
+          link: {
+            isVisible: { list: false },
           },
         },
       },

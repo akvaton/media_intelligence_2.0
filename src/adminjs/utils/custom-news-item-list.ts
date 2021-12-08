@@ -1,35 +1,23 @@
 import * as flat from 'flat';
-import { Action, ActionContext, ActionResponse } from 'adminjs';
+import { ActionContext, ListActionResponse } from 'adminjs';
 import Filter from './filter';
 import { populator } from './populator';
 import sortSetter from './sort-setter';
 import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
 const PER_PAGE_LIMIT = 500;
-/**
- * @implements Action
- * @category Actions
- * @module ListAction
- * @description
- * Returns selected Records in a list form
- * @private
- */
+
 export const ListAction = {
   name: 'list',
   isVisible: true,
   actionType: 'resource',
   showFilter: true,
   showInDrawer: false,
-  /**
-   * Responsible for returning data for all records.
-   *
-   * To invoke this action use {@link ApiClient#recordAction}
-   *
-   * @implements Action#handler
-   * @memberof module:ListAction
-   * @return {Promise<ListActionResponse>} records with metadata
-   */
-  handler: async (request, response, context: ActionContext) => {
+  handler: async (
+    request,
+    response,
+    context: ActionContext,
+  ): Promise<ListActionResponse> => {
     const { query } = request;
     const { sortBy, direction, filters = {} } = flat.unflatten(query || {});
     const { resource } = context;
