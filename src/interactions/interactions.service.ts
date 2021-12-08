@@ -50,6 +50,7 @@ export class InteractionsService {
         {
           removeOnComplete: true,
           jobId: newsItem.id,
+          timeout: 1000 * 5,
           delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
         },
       );
