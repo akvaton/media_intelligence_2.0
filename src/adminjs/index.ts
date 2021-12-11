@@ -21,17 +21,12 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
   resources: [
     {
       resource: Feed,
-      options: {
-        parent: null,
-      },
+      options: { parent: null, sort: { direction: 'desc', sortBy: 'id' } },
     },
     {
       resource: NewsItem,
       options: {
-        sort: {
-          direction: 'desc',
-          sortBy: 'id',
-        },
+        sort: { direction: 'desc', sortBy: 'id' },
         parent: null,
         actions: {
           list: ListAction,
@@ -93,17 +88,13 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           maxFacebookInteractions: {
             isVisible: { filter: true },
           },
+          facebookRegressionCoefficient: {
+            isVisible: { show: true },
+          },
           twitterInteractions: {
             isVisible: { list: true, filter: false, show: true, edit: false },
             type: 'number',
             position: 1001,
-          },
-          minTwitterInteractions: {
-            isVisible: { filter: true },
-            type: 'number',
-          },
-          maxTwitterInteractions: {
-            isVisible: { filter: true },
           },
           facebookGraphData: {
             isVisible: { show: true },
@@ -123,16 +114,14 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
             type: 'number',
           },
           link: {
-            isVisible: { list: false },
+            isVisible: { show: true },
           },
         },
       },
     },
     {
       resource: Interaction,
-      options: {
-        parent: null,
-      },
+      options: { parent: null, sort: { direction: 'desc', sortBy: 'id' } },
     },
   ],
   branding: {

@@ -24,7 +24,7 @@ export class FacebookInteractionsProcessor {
   @OnQueueCompleted()
   onCompleted({ id, data }: Job) {
     this.logger.debug(`Completed job with id: ${id}!`);
-    this.interactionsService.enqueueFacebookInteractionsProcessing({
+    return this.interactionsService.enqueueFacebookInteractionsProcessing({
       newsItem: data.newsItem,
       repeatedTimes: data.repeatedTimes + 1,
     });
@@ -34,7 +34,7 @@ export class FacebookInteractionsProcessor {
   async getInteractions(
     job: Job<{ newsItem: NewsItem; repeatedTimes: number }>,
   ) {
-    const { newsItem, repeatedTimes } = job.data;
+    const { newsItem } = job.data;
 
     await this.interactionsService.processFacebookInteractions(newsItem);
   }

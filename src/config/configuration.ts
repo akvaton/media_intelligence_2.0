@@ -1,2 +1,2 @@
-export const INTERACTIONS_PROCESSES_LIMIT = 10; //(60 / 15) * 48;
+export const INTERACTIONS_PROCESSES_LIMIT = (60 / 15) * 48;
 export const INTERACTIONS_PROCESSES_EVERY = 1000 * 60 * 15; //(60 / 15) * 48;

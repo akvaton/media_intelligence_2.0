@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FeedDto } from './dto/feed.dto';
@@ -9,19 +9,12 @@ import { Queue } from 'bull';
 
 @Injectable()
 export class FeedsService {
-  private readonly logger = new Logger(FeedsService.name);
   constructor(
     @InjectRepository(Feed)
     private feedsRepository: Repository<Feed>,
     @InjectQueue('feeds')
     private feedsQueue: Queue,
-  ) {
-    feedsQueue.getRepeatableJobs().then((jobs) => {
-      jobs.forEach((job) => {
-        feedsQueue.removeRepeatableByKey(job.key);
-      });
-    });
-  }
+  ) {}
 
   create(createFeedDto: FeedDto) {
     const feed = new Feed();
@@ -47,15 +40,19 @@ export class FeedsService {
     await this.feedsRepository.delete(id);
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async checkTheFeedsDataBase() {
     const feeds = await this.findAll();
-
-    feeds.forEach((feed) => {
-      this.feedsQueue.add('parse', feed, {
-        repeat: { cron: CronExpression.EVERY_30_SECONDS },
+    const jobs = feeds.map((feed) => ({
+      name: 'parse',
+      data: feed,
+      opts: {
+        repeat: { cron: CronExpression.EVERY_MINUTE },
         jobId: feed.id,
-      });
-    });
+        removeOnComplete: true,
+      },
+    }));
+
+    await this.feedsQueue.addBulk(jobs);
   }
 }

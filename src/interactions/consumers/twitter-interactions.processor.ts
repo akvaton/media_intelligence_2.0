@@ -28,7 +28,6 @@ export class TwitterInteractionsProcessor {
 
   @Process()
   processTwitterJobs(job: Job<NewsItem>) {
-    // this.logger.debug('Start processing interactions...', job.name);
     return this.interactionsService.processTwitterInteractions(job.data);
   }
 }
