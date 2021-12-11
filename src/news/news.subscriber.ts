@@ -43,14 +43,14 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
       where: { articleId: newsItem.id },
       order: { id: 'ASC' },
     });
-    const normalizedData = interactions.map((interaction, index) => {
+    const normalizedData = interactions.slice(1).map((interaction, index) => {
       if (interaction.audienceTime < interactions[index - 1]?.audienceTime) {
-        delta += interaction[index - 1]?.audienceTime;
+        delta += interactions[index - 1].audienceTime;
       }
 
       return {
         ...interaction,
-        audienceTime: (interaction.audienceTime += delta),
+        audienceTime: interaction.audienceTime + delta,
       } as Interaction;
     });
 
@@ -59,7 +59,7 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
     newsItem.facebookRegressionCoefficient =
       this.interactionsService.getFacebookRegressionCoefficient(
         newsItem.facebookGraphData.slice(
-          newsItem.startIndex - 1,
+          newsItem.startIndex,
           newsItem.endIndex,
         ),
       );
