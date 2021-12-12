@@ -12,6 +12,7 @@ const ExportInteractions = (props) => {
         title,
         link,
         facebookRegressionCoefficient,
+        // twitterRegressionCoefficient,
       };
     });
     const workSheet = XLSX.utils.json_to_sheet(newsData);
@@ -20,9 +21,9 @@ const ExportInteractions = (props) => {
     XLSX.utils.book_append_sheet(workBook, workSheet, 'newsData');
     XLSX.writeFile(workBook, 'newsData.xlsx');
     history.goBack();
-  }, [records]);
+  }, []);
 
-  return <pre>{JSON.stringify(records, null, ' ')}</pre>;
+  return <div />;
 };
 
 export default ExportInteractions;
