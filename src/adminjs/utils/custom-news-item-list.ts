@@ -38,26 +38,49 @@ export const ListAction = {
         resource.decorate().options,
       );
     }
-    const { minFacebookInteractions, maxFacebookInteractions, ...filtersData } =
-      filters;
+    const {
+      minFacebookInteractions,
+      maxFacebookInteractions,
+      minTwitterInteractions,
+      maxTwitterInteractions,
+      ...filtersData
+    } = filters;
 
     if (minFacebookInteractions || maxFacebookInteractions) {
       filtersData.facebookInteractions = true;
     }
+    if (minTwitterInteractions || minFacebookInteractions) {
+      filtersData.twitterInteractions = true;
+    }
     const filter = await new Filter(filtersData, resource).populate();
 
     if (minFacebookInteractions && maxFacebookInteractions) {
-      filter.filters['facebookInteractions'].custom = Between(
+      filter.filters.facebookInteractions.custom = Between(
         minFacebookInteractions,
         maxFacebookInteractions,
       );
     } else if (minFacebookInteractions) {
-      filter.filters['facebookInteractions'].custom = MoreThanOrEqual(
+      filter.filters.facebookInteractions.custom = MoreThanOrEqual(
         minFacebookInteractions,
       );
     } else if (maxFacebookInteractions) {
-      filter.filters['facebookInteractions'].custom = LessThanOrEqual(
+      filter.filters.facebookInteractions.custom = LessThanOrEqual(
         maxFacebookInteractions,
+      );
+    }
+
+    if (minTwitterInteractions && maxTwitterInteractions) {
+      filter.filters.twitterInteractions.custom = Between(
+        minTwitterInteractions,
+        maxTwitterInteractions,
+      );
+    } else if (minTwitterInteractions) {
+      filter.filters.twitterInteractions.custom = MoreThanOrEqual(
+        minTwitterInteractions,
+      );
+    } else if (maxTwitterInteractions) {
+      filter.filters.twitterInteractions.custom = LessThanOrEqual(
+        maxTwitterInteractions,
       );
     }
 

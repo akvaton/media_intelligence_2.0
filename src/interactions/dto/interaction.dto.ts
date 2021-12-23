@@ -4,3 +4,9 @@ export class InteractionDto {
   twitterInteractions: number;
   audienceTime: number;
 }
+
+export type GraphData = Array<{
+  lnFacebookInteractions: number;
+  lnAudienceTime: number;
+  lnTwitterInteractions: number;
+}>;

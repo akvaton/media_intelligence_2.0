@@ -2,11 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { createBullBoard } from 'bull-board';
 import { BullAdapter } from 'bull-board/bullAdapter';
-import { FACEBOOK_QUEUE } from './config/constants';
+import { FACEBOOK_QUEUE, TWITTER_QUEUE } from './config/constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const queues = [`BullQueue_feeds`, `BullQueue_${FACEBOOK_QUEUE}`];
+  const queues = [
+    `BullQueue_feeds`,
+    `BullQueue_${FACEBOOK_QUEUE}`,
+    `BullQueue_${TWITTER_QUEUE}`,
+  ];
   const { router: bullRouter } = createBullBoard(
     queues.map((queueName) => {
       return new BullAdapter(app.get(queueName));

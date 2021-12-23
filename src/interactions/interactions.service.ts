@@ -12,6 +12,7 @@ import { HttpService } from '@nestjs/axios';
 import { JSDOM } from 'jsdom';
 import {
   INTERACTIONS_PROCESSES_EVERY,
+  INTERACTIONS_PROCESSES_FINISH,
   INTERACTIONS_PROCESSES_LIMIT,
 } from 'src/config/configuration';
 import { setupCache } from 'axios-cache-adapter';
@@ -19,12 +20,14 @@ import { lastValueFrom } from 'rxjs';
 import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
 import { ObjectID } from 'typeorm/driver/mongodb/typings';
 import { FindConditions } from 'typeorm/find-options/FindConditions';
+import { GraphData } from './dto/interaction.dto';
 
 @Injectable()
 export class InteractionsService {
   private logger = new Logger(InteractionsService.name);
   private twitterClient = new TwitterApi(process.env.TWITTER_TOKEN).readOnly;
   private cache = setupCache({ maxAge: 60 * 1000 });
+
   constructor(
     @InjectQueue(FACEBOOK_QUEUE)
     private facebookInteractionsQueue: Queue,
@@ -46,41 +49,47 @@ export class InteractionsService {
           jobId: newsItem.id,
           timeout: 1000 * 5,
           delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
-          attempts: 3,
+          attempts: 5,
           backoff: { type: 'fixed', delay: 1000 * 60 },
         },
       );
-    } else {
-      return this.enqueueTwitterInteractionsProcessing(newsItem);
     }
   }
 
-  getFacebookGraphData(interactions: Array<Interaction>) {
+  enqueueTwitterInteractionsProcessing(newsItem: NewsItem) {
+    return this.twitterInteractionsQueue.add(newsItem, {
+      removeOnComplete: true,
+      jobId: newsItem.id,
+      timeout: 1000 * 5,
+      delay: INTERACTIONS_PROCESSES_FINISH,
+      attempts: 5,
+      backoff: { type: 'fixed', delay: 1000 * 60 },
+    });
+  }
+
+  getGraphData(interactions: Array<Interaction>): GraphData {
     return interactions.map((item) => {
       const audienceTime = item.audienceTime - interactions[0].audienceTime;
       const lnFacebookInteractions = item.facebookInteractions
         ? Math.log(item.facebookInteractions)
         : 0;
+      const lnTwitterInteractions = item.facebookInteractions
+        ? Math.log(item.twitterInteractions)
+        : 0;
       const lnAudienceTime = audienceTime ? Math.log(audienceTime) : 0;
 
-      return { lnFacebookInteractions, lnAudienceTime };
+      return { lnFacebookInteractions, lnAudienceTime, lnTwitterInteractions };
     });
   }
 
-  getFacebookRegressionCoefficient(
-    facebookGraphData: Array<{
-      lnFacebookInteractions: number;
-      lnAudienceTime: number;
-    }>,
-  ) {
-    const result = facebookGraphData.reduce(
+  getRegressionCoefficient(graphData: GraphData, key: keyof GraphData[0]) {
+    const result = graphData.reduce(
       (accumulator, currentItem) => {
         accumulator.xSum += currentItem.lnAudienceTime;
-        accumulator.ySum += currentItem.lnFacebookInteractions;
-        accumulator.xySum +=
-          currentItem.lnFacebookInteractions * currentItem.lnAudienceTime;
+        accumulator.ySum += currentItem[key];
+        accumulator.xySum += currentItem[key] * currentItem.lnAudienceTime;
         accumulator.x2Sum += Math.pow(currentItem.lnAudienceTime, 2);
-        accumulator.xAverage = accumulator.xSum / facebookGraphData.length;
+        accumulator.xAverage = accumulator.xSum / graphData.length;
 
         return accumulator;
       },
@@ -92,10 +101,6 @@ export class InteractionsService {
       ((xSum / xAverage) * xySum - xSum * ySum) /
       ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2))
     );
-  }
-
-  public enqueueTwitterInteractionsProcessing(newsItem: NewsItem) {
-    return this.twitterInteractionsQueue.add(newsItem);
   }
 
   public async cancelEnqueuedJobsForNewsItem(newsItemId) {
@@ -220,15 +225,9 @@ export class InteractionsService {
         this.interactionsRepository.save(interaction).then(() => {
           this.logger.debug(`Interaction saved for ${newsItem.id}`);
         }),
-        this.newsRepository
-          .update(newsItem.id, {
-            facebookInteractions,
-          })
-          .then(() => {
-            this.logger.debug(
-              `Facebook interactions updated for ${newsItem.id}`,
-            );
-          }),
+        this.newsRepository.update(newsItem.id, {
+          facebookInteractions,
+        }),
       ]);
     } catch (e) {
       this.logger.error(e);

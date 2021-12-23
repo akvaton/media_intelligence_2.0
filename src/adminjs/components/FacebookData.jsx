@@ -10,35 +10,56 @@ const FacebookData = ({ record }) => {
       },
       {},
     );
-    const { facebookGraphData } = normalizedRecord;
-    const fullGraphData = facebookGraphData.map((item) => [
+    const { graphData } = normalizedRecord;
+    const fullGraphDataFb = graphData.map((item) => [
       item.lnAudienceTime,
       item.lnFacebookInteractions,
     ]);
-    const selectedFragmentData = normalizedRecord.facebookGraphData
+    const selectedFragmentDataFb = fullGraphDataFb
       .slice(normalizedRecord.startIndex - 1, normalizedRecord.endIndex)
       .map((item) => [item.lnAudienceTime, item.lnFacebookInteractions]);
+    const fullGraphDataTwitter = graphData.map((item) => [
+      item.lnAudienceTime,
+      item.lnTwitterInteractions,
+    ]);
+    const selectedFragmentDataTwitter = fullGraphDataTwitter
+      .slice(normalizedRecord.startIndex - 1, normalizedRecord.endIndex)
+      .map((item) => [item.lnAudienceTime, item.lnTwitterInteractions]);
 
     [
-      { title: 'Повна Діаграма', id: 'container', data: fullGraphData },
       {
-        title: 'Виділені фрагменти',
-        id: 'selectedFragment',
-        data: selectedFragmentData,
+        title: 'Full Graph Facebook',
+        id: 'containerFb',
+        data: fullGraphDataFb,
+      },
+      {
+        title: 'Selected Fragment Facebook',
+        id: 'selectedFragmentFb',
+        data: selectedFragmentDataFb,
+      },
+      {
+        title: 'Full Graph Twitter',
+        id: 'containerTwitter',
+        data: fullGraphDataTwitter,
+      },
+      {
+        title: 'Full Graph Twitter',
+        id: 'selectedFragmentTwitter',
+        data: selectedFragmentDataTwitter,
       },
     ].forEach(({ title, id, data }) => {
       window.Highcharts.chart(id, {
         title: { text: title },
-        yAxis: { title: { text: 'Facebook Interactions ln' }, min: 0 },
+        yAxis: { title: { text: 'Interactions log' }, min: 0 },
         xAxis: {
-          title: { text: 'Audience Time ln' },
-          min: 0,
-          tickInterval: 0.5,
+          title: { text: 'Audience Time log' },
+          min: Math.min(...data.map(([x]) => x)),
+          tickInterval: 1,
         },
         tooltip: {
           headerFormat: '<b>{series.name}</b><br/>',
           pointFormat:
-            'lnAudienceTime = {point.x}, lnFacebookInteractions = {point.y}',
+            'Audience Time log = {point.x}, Interactions log = {point.y}',
         },
         series: [{ name: '', data, keys: ['x', 'y'] }],
         plotOptions: { series: { marker: { enabled: true } } },
@@ -48,8 +69,10 @@ const FacebookData = ({ record }) => {
 
   return (
     <div>
-      <div id="container" />
-      <div id="selectedFragment" />
+      <div id="containerFb" />
+      <div id="selectedFragmentFb" />
+      <div id="containerTwitter" />
+      <div id="selectedFragmentTwitter" />
     </div>
   );
 };

@@ -22,10 +22,15 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
     return NewsItem;
   }
 
-  afterInsert(event: InsertEvent<NewsItem>) {
-    return this.interactionsService.enqueueFacebookInteractionsProcessing({
-      newsItem: event.entity,
-    });
+  async afterInsert(event: InsertEvent<NewsItem>) {
+    return Promise.all([
+      this.interactionsService.enqueueFacebookInteractionsProcessing({
+        newsItem: event.entity,
+      }),
+      this.interactionsService.enqueueTwitterInteractionsProcessing(
+        event.entity,
+      ),
+    ]);
   }
 
   async afterUpdate(event: UpdateEvent<NewsItem>) {
@@ -54,14 +59,17 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
       } as Interaction;
     });
 
-    newsItem.facebookGraphData =
-      this.interactionsService.getFacebookGraphData(normalizedData) || [];
+    newsItem.graphData =
+      this.interactionsService.getGraphData(normalizedData) || [];
     newsItem.facebookRegressionCoefficient =
-      this.interactionsService.getFacebookRegressionCoefficient(
-        newsItem.facebookGraphData.slice(
-          newsItem.startIndex,
-          newsItem.endIndex,
-        ),
+      this.interactionsService.getRegressionCoefficient(
+        newsItem.graphData.slice(newsItem.startIndex, newsItem.endIndex),
+        'lnFacebookInteractions',
+      );
+    newsItem.twitterRegressionCoefficient =
+      this.interactionsService.getRegressionCoefficient(
+        newsItem.graphData.slice(newsItem.startIndex, newsItem.endIndex),
+        'lnTwitterInteractions',
       );
   }
 }

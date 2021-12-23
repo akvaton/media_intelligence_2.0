@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Feed } from 'src/feeds/entities/feed.entity';
 import { Interaction } from 'src/interactions/entities/interaction.entity';
+import { GraphData } from '../../interactions/dto/interaction.dto';
 
 @Entity('articles')
 export class NewsItem extends BaseEntity {
@@ -35,10 +36,10 @@ export class NewsItem extends BaseEntity {
   @Column({ name: 'sourceId', type: 'int', nullable: false })
   sourceId: number;
 
-  @Column({ default: 3 })
+  @Column({ default: 5 })
   startIndex: number;
 
-  @Column({ default: 19 })
+  @Column({ default: 15 })
   endIndex: number;
 
   @OneToMany(() => Interaction, (interaction) => interaction.article)
@@ -53,7 +54,9 @@ export class NewsItem extends BaseEntity {
   @Column({ default: -1 })
   facebookInteractions: number;
 
-  public facebookGraphData: Array<{ lnFacebookInteractions; lnAudienceTime }>;
+  public graphData: GraphData;
 
   public facebookRegressionCoefficient: unknown;
+
+  public twitterRegressionCoefficient: unknown;
 }

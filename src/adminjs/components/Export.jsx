@@ -6,13 +6,18 @@ const ExportInteractions = (props) => {
 
   useEffect(() => {
     const newsData = props.records.map(({ params }) => {
-      const { title, link, facebookRegressionCoefficient } = params;
+      const {
+        title,
+        link,
+        facebookRegressionCoefficient,
+        twitterRegressionCoefficient,
+      } = params;
 
       return {
         title,
         link,
         facebookRegressionCoefficient,
-        // twitterRegressionCoefficient,
+        twitterRegressionCoefficient,
       };
     });
     const workSheet = XLSX.utils.json_to_sheet(newsData);

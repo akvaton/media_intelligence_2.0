@@ -88,7 +88,16 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           maxFacebookInteractions: {
             isVisible: { filter: true },
           },
+          minTwitterInteractions: {
+            isVisible: { filter: true },
+          },
+          maxTwitterInteractions: {
+            isVisible: { filter: true },
+          },
           facebookRegressionCoefficient: {
+            isVisible: { show: true },
+          },
+          twitterRegressionCoefficient: {
             isVisible: { show: true },
           },
           twitterInteractions: {
@@ -96,7 +105,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
             type: 'number',
             position: 1001,
           },
-          facebookGraphData: {
+          graphData: {
             isVisible: { show: true },
             components: {
               show: AdminJS.bundle(
@@ -115,6 +124,9 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           },
           link: {
             isVisible: { show: true },
+          },
+          id: {
+            isVisible: { list: true, show: true },
           },
         },
       },

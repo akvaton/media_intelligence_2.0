@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NewsItem } from './entities/news-item.entity';
 import { In } from 'typeorm';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class NewsService {
@@ -24,12 +25,18 @@ export class NewsService {
     }, {});
     const entitiesToSave = items.reduce((acc, createDto) => {
       if (!existingItemsMap[createDto.link]) {
+        const pubDate = new Date(createDto.pubDate || new Date());
+        if (dayjs().diff(pubDate, 'hour') > 24) {
+          return acc;
+        }
         const newsItem = new NewsItem();
 
         newsItem.link = createDto.link;
         newsItem.sourceId = sourceId;
         newsItem.title = createDto.title;
-        newsItem.pubDate = new Date(createDto.pubDate);
+        newsItem.pubDate = pubDate;
+
+        existingItemsMap[createDto.link] = true;
         acc.push(newsItem);
       }
 
