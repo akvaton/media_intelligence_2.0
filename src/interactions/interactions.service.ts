@@ -68,7 +68,7 @@ export class InteractionsService {
   }
 
   getGraphData(interactions: Array<Interaction>): GraphData {
-    return interactions.map((item) => {
+    return interactions.splice(1).map((item) => {
       const audienceTime = item.audienceTime - interactions[0].audienceTime;
       const lnFacebookInteractions = item.facebookInteractions
         ? Math.log(item.facebookInteractions)
@@ -131,27 +131,26 @@ export class InteractionsService {
     }
   }
 
-  private async getTwitterInteractions(url: string, timeSlots: Array<Date>) {
+  private async getTwitterInteractions(url: string, timeSlots: Array<string>) {
     try {
+      let tweetsSum = 0;
       const fullUrl = `url:"${url}"`;
       const result = await this.twitterClient.v2.tweetCountRecent(fullUrl, {
         granularity: 'minute',
+        start_time: dayjs(timeSlots[0]).subtract(1, 'm').toISOString(),
+        end_time: timeSlots[timeSlots.length - 1],
       });
-      const resultArray = {};
-      let numbTweet = 0;
-      result.data.forEach(function numTweets(c) {
-        numbTweet = numbTweet + c.tweet_count;
-        resultArray[c.end] = numbTweet;
-      });
-      const resultTweets = {};
+      const resultArray = result.data.reduce((acc, { tweet_count, end }) => {
+        acc[end] = tweetsSum += tweet_count;
 
-      timeSlots.forEach(function (d) {
-        const startOfMinuteTimeString = d.toISOString();
+        return acc;
+      }, {});
 
-        resultTweets[startOfMinuteTimeString] =
-          resultArray[startOfMinuteTimeString];
-      });
-      return resultTweets;
+      return timeSlots.reduce((acc, dateISOString) => {
+        acc[dateISOString] = resultArray[dateISOString];
+
+        return acc;
+      }, {});
     } catch (e) {
       this.logger.error('Error with twitter interactions', e);
       throw e;
@@ -187,7 +186,9 @@ export class InteractionsService {
       }),
       this.newsRepository.findOne(newsItem.id),
     ]);
-    const timeSlots = interactions.map(({ requestTime }) => requestTime);
+    const timeSlots = interactions
+      .map(({ requestTime }) => requestTime.toISOString())
+      .sort();
     const twitterInteractions = await this.getTwitterInteractions(
       newsItem.link,
       timeSlots,
