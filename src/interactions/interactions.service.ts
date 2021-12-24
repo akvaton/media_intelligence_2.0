@@ -68,7 +68,7 @@ export class InteractionsService {
   }
 
   getGraphData(interactions: Array<Interaction>): GraphData {
-    return interactions.splice(1).map((item) => {
+    return interactions.map((item) => {
       const audienceTime = item.audienceTime - interactions[0].audienceTime;
       const lnFacebookInteractions = item.facebookInteractions
         ? Math.log(item.facebookInteractions)
@@ -182,22 +182,31 @@ export class InteractionsService {
   async processTwitterInteractions(newsItem: NewsItem) {
     const [interactions, newsItemEntity] = await Promise.all([
       this.interactionsRepository.find({
-        articleId: newsItem.id,
+        where: { articleId: newsItem.id },
+        order: { requestTime: 'ASC' },
       }),
       this.newsRepository.findOne(newsItem.id),
     ]);
-    const timeSlots = interactions
-      .map(({ requestTime }) => requestTime.toISOString())
-      .sort();
+
+    if (!interactions.length) {
+      return;
+    }
+
+    const timeSlots = interactions.map((i) => i.requestTime.toISOString());
     const twitterInteractions = await this.getTwitterInteractions(
       newsItem.link,
       timeSlots,
     );
 
-    interactions.forEach((interaction) => {
+    interactions.forEach((interaction, i) => {
+      const requestTime = interaction.requestTime.toISOString();
+
       interaction.twitterInteractions =
-        twitterInteractions[interaction.requestTime.toISOString()];
+        twitterInteractions[requestTime] ||
+        interactions[i - 1]?.twitterInteractions ||
+        0;
     });
+
     newsItemEntity.twitterInteractions = Math.max(
       ...interactions.map((i) => i.twitterInteractions),
     );

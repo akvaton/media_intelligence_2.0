@@ -19,7 +19,7 @@ export class Interaction extends BaseEntity {
   @Column('int')
   facebookInteractions: number;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'int', default: -1, nullable: true })
   twitterInteractions: number;
 
   @Column({ type: 'int', name: 'Audience time' })

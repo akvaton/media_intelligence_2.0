@@ -15,16 +15,18 @@ const FacebookData = ({ record }) => {
       item.lnAudienceTime,
       item.lnFacebookInteractions,
     ]);
-    const selectedFragmentDataFb = fullGraphDataFb
-      .slice(normalizedRecord.startIndex - 1, normalizedRecord.endIndex)
-      .map((item) => [item.lnAudienceTime, item.lnFacebookInteractions]);
+    const selectedFragmentDataFb = fullGraphDataFb.slice(
+      normalizedRecord.startIndex - 1,
+      normalizedRecord.endIndex,
+    );
     const fullGraphDataTwitter = graphData.map((item) => [
       item.lnAudienceTime,
       item.lnTwitterInteractions,
     ]);
-    const selectedFragmentDataTwitter = fullGraphDataTwitter
-      .slice(normalizedRecord.startIndex - 1, normalizedRecord.endIndex)
-      .map((item) => [item.lnAudienceTime, item.lnTwitterInteractions]);
+    const selectedFragmentDataTwitter = fullGraphDataTwitter.slice(
+      normalizedRecord.startIndex - 1,
+      normalizedRecord.endIndex,
+    );
 
     [
       {
@@ -43,7 +45,7 @@ const FacebookData = ({ record }) => {
         data: fullGraphDataTwitter,
       },
       {
-        title: 'Full Graph Twitter',
+        title: 'Selected Fragment Twitter',
         id: 'selectedFragmentTwitter',
         data: selectedFragmentDataTwitter,
       },

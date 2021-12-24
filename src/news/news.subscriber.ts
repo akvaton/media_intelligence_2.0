@@ -48,7 +48,7 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
       where: { articleId: newsItem.id },
       order: { id: 'ASC' },
     });
-    const normalizedData = interactions.slice(1).map((interaction, index) => {
+    const normalizedData = interactions.map((interaction, index) => {
       if (interaction.audienceTime < interactions[index - 1]?.audienceTime) {
         delta += interactions[index - 1].audienceTime;
       }
