@@ -68,12 +68,16 @@ export class InteractionsService {
   }
 
   getGraphData(interactions: Array<Interaction>): GraphData {
-    return interactions.map((item) => {
+    return interactions.map((item, index) => {
+      const twitterInteractions =
+        item.twitterInteractions ||
+        interactions[index - 1]?.twitterInteractions ||
+        0;
       const audienceTime = item.audienceTime - interactions[0].audienceTime;
       const lnFacebookInteractions = item.facebookInteractions
         ? Math.log(item.facebookInteractions)
         : 0;
-      const lnTwitterInteractions = item.facebookInteractions
+      const lnTwitterInteractions = twitterInteractions
         ? Math.log(item.twitterInteractions)
         : 0;
       const lnAudienceTime = audienceTime ? Math.log(audienceTime) : 0;
