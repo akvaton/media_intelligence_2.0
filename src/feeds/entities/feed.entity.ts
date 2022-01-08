@@ -28,7 +28,6 @@ export class Feed extends BaseEntity {
 
   @Column({
     enum: FeedOrigin,
-    default: FeedOrigin.USA,
   })
   origin: string;
 }

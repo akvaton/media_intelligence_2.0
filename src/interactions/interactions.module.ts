@@ -23,6 +23,10 @@ import { AudienceTimeProcessor } from './consumers/audience-time.processor';
     }),
     BullModule.registerQueue({
       name: FACEBOOK_QUEUE,
+      limiter: {
+        max: 200,
+        duration: 1000 * 60 * 60, // 1 hour
+      },
     }),
     BullModule.registerQueue({
       name: TWITTER_QUEUE,

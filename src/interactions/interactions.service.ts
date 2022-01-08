@@ -36,7 +36,10 @@ export class InteractionsService {
 
   constructor(
     @InjectQueue(FACEBOOK_QUEUE)
-    private facebookInteractionsQueue: Queue,
+    private facebookInteractionsQueue: Queue<{
+      article: Article;
+      interactionId: number;
+    }>,
     @InjectQueue(AUDIENCE_TIME_QUEUE)
     private audienceTimeQueue: Queue,
     @InjectQueue(TWITTER_QUEUE)
@@ -48,20 +51,17 @@ export class InteractionsService {
     private httpService: HttpService,
   ) {}
 
-  enqueueFacebookInteractionsProcessing({ newsItem, repeatedTimes = 0 }) {
-    if (repeatedTimes !== INTERACTIONS_PROCESSES_LIMIT) {
-      return this.facebookInteractionsQueue.add(
-        { newsItem, repeatedTimes },
-        {
-          removeOnComplete: true,
-          jobId: newsItem.id,
-          timeout: 1000 * 5,
-          delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
-          attempts: 5,
-          backoff: { type: 'fixed', delay: 1000 * 60 },
-        },
-      );
-    }
+  enqueueFacebookInteractionsProcessing({ article, interactionId }) {
+    return this.facebookInteractionsQueue.add(
+      { article, interactionId },
+      {
+        removeOnComplete: true,
+        jobId: interactionId,
+        timeout: 1000 * 5,
+        attempts: 3,
+        backoff: { type: 'fixed', delay: 5000 * 60 },
+      },
+    );
   }
 
   enqueueTwitterInteractionsProcessing(newsItem: Article) {
@@ -259,11 +259,18 @@ export class InteractionsService {
     }
   }
 
-  async processFacebookInteractions(newsItem: Article) {
+  async processFacebookInteractions(article: Article, interactionId: number) {
     try {
-      const facebookInteractions = this.getFacebookInteractions(newsItem);
+      const interaction = await this.interactionsRepository.findOne({
+        where: { id: interactionId },
+        relations: ['article'],
+      });
+      const { article } = interaction;
 
-      return facebookInteractions;
+      interaction.facebookInteractions = await this.getFacebookInteractions(
+        article,
+      );
+      await this.interactionsRepository.save(interaction);
     } catch (e) {
       this.logger.error(e);
       throw e;
@@ -307,16 +314,18 @@ export class InteractionsService {
     );
   }
 
-  public async measureUkrainianAudienceTime(newsItem: Article) {
+  public async measureUkrainianAudienceTime(article: Article) {
     const requestTime = dayjs(new Date()).startOf('minute').toDate();
     const audienceTime = await this.getUkrainianAudienceTime();
     const interaction = new Interaction();
 
     interaction.requestTime = requestTime;
     interaction.audienceTime = audienceTime;
-    interaction.articleId = newsItem.id;
+    interaction.articleId = article.id;
 
-    return await this.interactionsRepository.save(interaction);
+    const { id } = await this.interactionsRepository.save(interaction);
+
+    return this.facebookInteractionsQueue.add({ article, interactionId: id });
   }
 
   public async measureTwitterAudienceTime(

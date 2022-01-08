@@ -22,20 +22,17 @@ export class FacebookInteractionsProcessor {
   }
 
   @OnQueueCompleted()
-  onCompleted({ id, data }: Job) {
+  onCompleted({ id }: Job) {
     this.logger.debug(`Completed job with id: ${id}!`);
-    return this.interactionsService.enqueueFacebookInteractionsProcessing({
-      newsItem: data.newsItem,
-      repeatedTimes: data.repeatedTimes + 1,
-    });
   }
 
   @Process()
-  async getInteractions(
-    job: Job<{ newsItem: Article; repeatedTimes: number }>,
-  ) {
-    const { newsItem } = job.data;
+  async getInteractions(job: Job<{ article: Article; interactionId: number }>) {
+    const { article, interactionId } = job.data;
 
-    await this.interactionsService.processFacebookInteractions(newsItem);
+    await this.interactionsService.processFacebookInteractions(
+      article,
+      interactionId,
+    );
   }
 }

@@ -60,8 +60,11 @@ const GraphData = ({ record }) => {
         },
         tooltip: {
           headerFormat: '',
-          pointFormat:
-            '<b>{point.index}</b> <br/> Audience Time log = {point.x}, Interactions log = {point.y} ',
+          pointFormatter: function () {
+            return `<b>${this.index + 1}</b> <br/> Audience Time log = ${
+              this.x
+            }, Interactions log = ${this.y}`;
+          },
         },
         series: [{ name: '', data, keys: ['x', 'y'] }],
         plotOptions: { series: { marker: { enabled: true } } },
