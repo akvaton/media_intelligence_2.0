@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import set from 'lodash.set';
 
-const FacebookData = ({ record }) => {
+const GraphData = ({ record }) => {
   useEffect(() => {
     const normalizedRecord = Object.entries(record.params).reduce(
       (acc, [key, value]) => {
@@ -12,33 +12,33 @@ const FacebookData = ({ record }) => {
     );
     const { graphData } = normalizedRecord;
     const fullGraphDataFb = graphData.map((item) => [
-      item.lnAudienceTime,
-      item.lnFacebookInteractions,
+      item.audienceTime,
+      item.facebook,
     ]);
     const selectedFragmentDataFb = fullGraphDataFb.slice(
-      normalizedRecord.startIndex - 1,
-      normalizedRecord.endIndex,
+      normalizedRecord.facebookStartIndex - 1,
+      normalizedRecord.facebookEndIndex,
     );
     const fullGraphDataTwitter = graphData.map((item) => [
-      item.lnAudienceTime,
-      item.lnTwitterInteractions,
+      item.audienceTime,
+      item.twitter,
     ]);
     const selectedFragmentDataTwitter = fullGraphDataTwitter.slice(
-      normalizedRecord.startIndex - 1,
-      normalizedRecord.endIndex,
+      normalizedRecord.twitterStartIndex - 1,
+      normalizedRecord.twitterEndIndex,
     );
 
     [
-      {
-        title: 'Full Graph Facebook',
-        id: 'containerFb',
-        data: fullGraphDataFb,
-      },
-      {
-        title: 'Selected Fragment Facebook',
-        id: 'selectedFragmentFb',
-        data: selectedFragmentDataFb,
-      },
+      // {
+      //   title: 'Full Graph Facebook',
+      //   id: 'containerFb',
+      //   data: fullGraphDataFb,
+      // },
+      // {
+      //   title: 'Selected Fragment Facebook',
+      //   id: 'selectedFragmentFb',
+      //   data: selectedFragmentDataFb,
+      // },
       {
         title: 'Full Graph Twitter',
         id: 'containerTwitter',
@@ -59,9 +59,9 @@ const FacebookData = ({ record }) => {
           tickInterval: 1,
         },
         tooltip: {
-          headerFormat: '<b>{series.name}</b><br/>',
+          headerFormat: '',
           pointFormat:
-            'Audience Time log = {point.x}, Interactions log = {point.y}',
+            '<b>{point.index}</b> <br/> Audience Time log = {point.x}, Interactions log = {point.y} ',
         },
         series: [{ name: '', data, keys: ['x', 'y'] }],
         plotOptions: { series: { marker: { enabled: true } } },
@@ -79,4 +79,4 @@ const FacebookData = ({ record }) => {
   );
 };
 
-export default FacebookData;
+export default GraphData;

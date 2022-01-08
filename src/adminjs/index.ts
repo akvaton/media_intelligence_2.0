@@ -1,5 +1,5 @@
 import { Feed } from '../feeds/entities/feed.entity';
-import { NewsItem } from '../news/entities/news-item.entity';
+import { Article } from '../news/entities/news-item.entity';
 import { Interaction } from '../interactions/entities/interaction.entity';
 import AdminJS, {
   ActionContext,
@@ -8,7 +8,6 @@ import AdminJS, {
   NotFoundError,
 } from 'adminjs';
 import ListAction from './utils/custom-news-item-list';
-import { bulkDeleteHandler } from './resources/news-item';
 
 export const ADMIN_JS_OPTIONS: AdminJSOptions = {
   rootPath: '/',
@@ -24,15 +23,12 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
       options: { parent: null, sort: { direction: 'desc', sortBy: 'id' } },
     },
     {
-      resource: NewsItem,
+      resource: Article,
       options: {
         sort: { direction: 'desc', sortBy: 'id' },
         parent: null,
         actions: {
           list: ListAction,
-          bulkDelete: {
-            handler: bulkDeleteHandler,
-          },
           exportData: {
             icon: 'View',
             actionType: 'bulk',
@@ -74,9 +70,6 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           },
         },
         properties: {
-          deletedAt: {
-            isVisible: false,
-          },
           facebookInteractions: {
             isVisible: { list: true, filter: false, show: true, edit: false },
             type: 'number',
@@ -94,10 +87,10 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           maxTwitterInteractions: {
             isVisible: { filter: true },
           },
-          facebookRegressionCoefficient: {
+          facebookRegression: {
             isVisible: { show: true },
           },
-          twitterRegressionCoefficient: {
+          twitterRegression: {
             isVisible: { show: true },
           },
           twitterInteractions: {
@@ -109,16 +102,24 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
             isVisible: { show: true },
             components: {
               show: AdminJS.bundle(
-                '../../src/adminjs/components/FacebookData.jsx',
+                '../../src/adminjs/components/GraphData.jsx',
               ),
             },
             position: 999,
           },
-          startIndex: {
+          facebookStartIndex: {
             isVisible: { list: false, filter: false, show: true, edit: true },
             type: 'number',
           },
-          endIndex: {
+          facebookEndIndex: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            type: 'number',
+          },
+          twitterStartIndex: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            type: 'number',
+          },
+          twitterEndIndex: {
             isVisible: { list: false, filter: false, show: true, edit: true },
             type: 'number',
           },

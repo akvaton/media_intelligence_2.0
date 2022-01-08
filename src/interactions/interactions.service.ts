@@ -1,12 +1,12 @@
 import axios from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { FindManyOptions, Repository } from 'typeorm';
+import { Between, FindManyOptions, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Interaction } from './entities/interaction.entity';
-import { NewsItem } from '../news/entities/news-item.entity';
+import { Article } from '../news/entities/news-item.entity';
 import * as dayjs from 'dayjs';
 import { HttpService } from '@nestjs/axios';
 import { JSDOM } from 'jsdom';
@@ -17,10 +17,16 @@ import {
 } from 'src/config/configuration';
 import { setupCache } from 'axios-cache-adapter';
 import { lastValueFrom } from 'rxjs';
-import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
-import { ObjectID } from 'typeorm/driver/mongodb/typings';
-import { FindConditions } from 'typeorm/find-options/FindConditions';
-import { GraphData } from './dto/interaction.dto';
+import {
+  AUDIENCE_TIME_QUEUE,
+  BIGMIR_MEDIA_SELECTOR,
+  FACEBOOK_QUEUE,
+  TWITTER_AUDIENCE_TIME_JOB,
+  TWITTER_QUEUE,
+  UKRAINIAN_AUDIENCE_TIME_JOB,
+} from 'src/config/constants';
+import { GraphData, SocialMediaKey } from './dto/interaction.dto';
+import { FeedOrigin } from '../feeds/entities/feed.entity';
 
 @Injectable()
 export class InteractionsService {
@@ -31,12 +37,14 @@ export class InteractionsService {
   constructor(
     @InjectQueue(FACEBOOK_QUEUE)
     private facebookInteractionsQueue: Queue,
+    @InjectQueue(AUDIENCE_TIME_QUEUE)
+    private audienceTimeQueue: Queue,
     @InjectQueue(TWITTER_QUEUE)
     private twitterInteractionsQueue: Queue,
     @InjectRepository(Interaction)
     private interactionsRepository: Repository<Interaction>,
-    @InjectRepository(NewsItem)
-    private newsRepository: Repository<NewsItem>,
+    @InjectRepository(Article)
+    private newsRepository: Repository<Article>,
     private httpService: HttpService,
   ) {}
 
@@ -56,7 +64,7 @@ export class InteractionsService {
     }
   }
 
-  enqueueTwitterInteractionsProcessing(newsItem: NewsItem) {
+  enqueueTwitterInteractionsProcessing(newsItem: Article) {
     return this.twitterInteractionsQueue.add(newsItem, {
       removeOnComplete: true,
       jobId: newsItem.id,
@@ -74,25 +82,30 @@ export class InteractionsService {
         interactions[index - 1]?.twitterInteractions ||
         0;
       const audienceTime = item.audienceTime - interactions[0].audienceTime;
-      const lnFacebookInteractions = item.facebookInteractions
-        ? Math.log(item.facebookInteractions)
-        : 0;
-      const lnTwitterInteractions = twitterInteractions
-        ? Math.log(item.twitterInteractions)
-        : 0;
-      const lnAudienceTime = audienceTime ? Math.log(audienceTime) : 0;
+      const facebook =
+        item.facebookInteractions > 0 ? Math.log(item.facebookInteractions) : 0;
+      const twitter =
+        twitterInteractions > 0 ? Math.log(item.twitterInteractions) : 0;
 
-      return { lnFacebookInteractions, lnAudienceTime, lnTwitterInteractions };
+      return {
+        facebook,
+        audienceTime: audienceTime ? Math.log(audienceTime) : 0,
+        twitter,
+      };
     });
   }
 
-  getRegressionCoefficient(graphData: GraphData, key: keyof GraphData[0]) {
-    const result = graphData.reduce(
+  getRegressionCoefficient(newsItem: Article, key: SocialMediaKey) {
+    const { graphData } = newsItem;
+    const startIndex = newsItem[`${key}StartIndex`] || undefined;
+    const endIndex = newsItem[`${key}EndIndex`] || undefined;
+    const result = graphData.slice(startIndex, endIndex).reduce(
       (accumulator, currentItem) => {
-        accumulator.xSum += currentItem.lnAudienceTime;
-        accumulator.ySum += currentItem[key];
-        accumulator.xySum += currentItem[key] * currentItem.lnAudienceTime;
-        accumulator.x2Sum += Math.pow(currentItem.lnAudienceTime, 2);
+        accumulator.xSum += currentItem.audienceTime;
+        accumulator.ySum += currentItem[key as string];
+        accumulator.xySum +=
+          currentItem[key as string] * currentItem.audienceTime;
+        accumulator.x2Sum += Math.pow(currentItem.audienceTime, 2);
         accumulator.xAverage = accumulator.xSum / graphData.length;
 
         return accumulator;
@@ -119,7 +132,7 @@ export class InteractionsService {
     }
   }
 
-  private async getFacebookInteractions(newsItem: NewsItem) {
+  private async getFacebookInteractions(newsItem: Article) {
     try {
       const urlRequest = `https://graph.facebook.com/?id=${newsItem.link}&fields=engagement&access_token=${process.env.FB_TOKEN}`;
       const response = await axios.get(urlRequest);
@@ -136,12 +149,13 @@ export class InteractionsService {
   }
 
   private async getTwitterInteractions(url: string, timeSlots: Array<string>) {
+    const fullUrl = `url:"${url}"`;
+    const startTime = dayjs(timeSlots[0]).subtract(1, 'm').toISOString();
     try {
       let tweetsSum = 0;
-      const fullUrl = `url:"${url}"`;
       const result = await this.twitterClient.v2.tweetCountRecent(fullUrl, {
         granularity: 'minute',
-        start_time: dayjs(timeSlots[0]).subtract(1, 'm').toISOString(),
+        start_time: startTime,
         end_time: timeSlots[timeSlots.length - 1],
       });
       const resultArray = result.data.reduce((acc, { tweet_count, end }) => {
@@ -156,12 +170,12 @@ export class InteractionsService {
         return acc;
       }, {});
     } catch (e) {
-      this.logger.error('Error with twitter interactions', e);
+      this.logger.error(`${e}, Full url: ${fullUrl}, Start time: ${startTime}`);
       throw e;
     }
   }
 
-  private async getAudienceTime() {
+  private async getUkrainianAudienceTime() {
     try {
       const responsePage$ = this.httpService.get<string>(
         'http://top.bigmir.net/',
@@ -173,7 +187,7 @@ export class InteractionsService {
       const responseHtml = (await lastValueFrom(responsePage$)).data;
       const dom = new JSDOM(responseHtml);
       const hitsNumber = dom.window.document.querySelector(
-        '#container_main > div.page2.g-clearfix > div.doublecol.normal.fr > table:nth-child(3) > tbody > tr:nth-child(18) > td:nth-child(3)',
+        BIGMIR_MEDIA_SELECTOR,
       ).textContent;
 
       return parseInt(hitsNumber.replace(/\D/g, ''));
@@ -183,14 +197,32 @@ export class InteractionsService {
     }
   }
 
-  async processTwitterInteractions(newsItem: NewsItem) {
-    const [interactions, newsItemEntity] = await Promise.all([
+  async processTwitterInteractions(newsItem: Article) {
+    // eslint-disable-next-line prefer-const
+    let [interactions, newsItemEntity] = await Promise.all([
       this.interactionsRepository.find({
         where: { articleId: newsItem.id },
         order: { requestTime: 'ASC' },
       }),
-      this.newsRepository.findOne(newsItem.id),
+      this.newsRepository.findOne(newsItem.id, { relations: ['source'] }),
     ]);
+
+    if (newsItemEntity.source.origin === FeedOrigin.USA) {
+      const publicationDate = dayjs(newsItemEntity.pubDate);
+
+      interactions = [...Array(INTERACTIONS_PROCESSES_LIMIT)].map(
+        (_, index) => {
+          const interaction = new Interaction();
+
+          interaction.requestTime = publicationDate
+            .add(INTERACTIONS_PROCESSES_EVERY * index, 'ms')
+            .startOf('minute')
+            .toDate();
+          interaction.articleId = newsItem.id;
+          return interaction;
+        },
+      );
+    }
 
     if (!interactions.length) {
       return;
@@ -219,30 +251,19 @@ export class InteractionsService {
       this.interactionsRepository.save(interactions),
       this.newsRepository.save(newsItemEntity),
     ]);
+
+    if (newsItemEntity.source.origin === FeedOrigin.USA) {
+      await this.enqueueTwitterAudienceTimeMeasuring({
+        newsItem: newsItemEntity,
+      });
+    }
   }
 
-  async processFacebookInteractions(newsItem: NewsItem) {
+  async processFacebookInteractions(newsItem: Article) {
     try {
-      const dateOfRequest = dayjs(new Date()).startOf('minute').toDate();
-      const [facebookInteractions, audienceTime] = await Promise.all([
-        this.getFacebookInteractions(newsItem),
-        this.getAudienceTime(),
-      ]);
-      const interaction = new Interaction();
+      const facebookInteractions = this.getFacebookInteractions(newsItem);
 
-      interaction.requestTime = dateOfRequest;
-      interaction.facebookInteractions = facebookInteractions;
-      interaction.audienceTime = audienceTime;
-      interaction.articleId = newsItem.id;
-
-      await Promise.all([
-        this.interactionsRepository.save(interaction).then(() => {
-          this.logger.debug(`Interaction saved for ${newsItem.id}`);
-        }),
-        this.newsRepository.update(newsItem.id, {
-          facebookInteractions,
-        }),
-      ]);
+      return facebookInteractions;
     } catch (e) {
       this.logger.error(e);
       throw e;
@@ -253,18 +274,86 @@ export class InteractionsService {
     return this.interactionsRepository.find(options);
   }
 
-  delete(
-    criteria:
-      | string
-      | string[]
-      | number
-      | number[]
-      | Date
-      | Date[]
-      | ObjectID
-      | ObjectID[]
-      | FindConditions<Interaction>,
+  public enqueueTwitterAudienceTimeMeasuring({ newsItem, repeatedTimes = 0 }) {
+    return this.audienceTimeQueue.add(
+      TWITTER_AUDIENCE_TIME_JOB,
+      { newsItem, repeatedTimes },
+      {
+        removeOnComplete: true,
+        jobId: newsItem.id,
+        timeout: 1000 * 5,
+        delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
+        attempts: 5,
+        backoff: { type: 'fixed', delay: 1000 * 60 },
+      },
+    );
+  }
+
+  public enqueueUkrainianAudienceTimeMeasuring({
+    newsItem,
+    repeatedTimes = 0,
+  }) {
+    return this.audienceTimeQueue.add(
+      UKRAINIAN_AUDIENCE_TIME_JOB,
+      { newsItem, repeatedTimes },
+      {
+        removeOnComplete: true,
+        jobId: newsItem.id,
+        timeout: 1000 * 5,
+        delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
+        attempts: 5,
+        backoff: { type: 'fixed', delay: 1000 * 60 },
+      },
+    );
+  }
+
+  public async measureUkrainianAudienceTime(newsItem: Article) {
+    const requestTime = dayjs(new Date()).startOf('minute').toDate();
+    const audienceTime = await this.getUkrainianAudienceTime();
+    const interaction = new Interaction();
+
+    interaction.requestTime = requestTime;
+    interaction.audienceTime = audienceTime;
+    interaction.articleId = newsItem.id;
+
+    return await this.interactionsRepository.save(interaction);
+  }
+
+  public async measureTwitterAudienceTime(
+    article: Article,
+    interactionIndex: number,
   ) {
-    return this.interactionsRepository.delete(criteria);
+    try {
+      const articleInteractions = await this.interactionsRepository.find({
+        where: { articleId: article.id },
+        order: { requestTime: 'ASC' },
+      });
+      const interaction = articleInteractions[interactionIndex];
+      const startTime = dayjs(interaction.requestTime)
+        .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
+        .add(1, 'minute')
+        .toISOString();
+      const inRangeInteractions = await this.interactionsRepository.find({
+        where: {
+          requestTime: Between(
+            startTime,
+            dayjs(interaction.requestTime).toISOString(),
+          ),
+        },
+        relations: ['article', 'article.source'],
+      });
+
+      interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
+        if (curr.article.source.origin === FeedOrigin.USA) {
+          return acc + curr.twitterInteractions;
+        }
+        return acc;
+      }, 0);
+
+      return await this.interactionsRepository.save(interaction);
+    } catch (e) {
+      this.logger.error(e);
+      throw e;
+    }
   }
 }

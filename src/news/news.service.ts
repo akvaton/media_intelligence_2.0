@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NewsItem } from './entities/news-item.entity';
+import { Article } from './entities/news-item.entity';
 import { In } from 'typeorm';
 import * as dayjs from 'dayjs';
 
 @Injectable()
 export class NewsService {
   constructor(
-    @InjectRepository(NewsItem)
-    private newsRepository: Repository<NewsItem>,
+    @InjectRepository(Article)
+    private newsRepository: Repository<Article>,
   ) {}
 
   async createIfNotExist(items: Array<CreateNewsItemDto>, sourceId: number) {
@@ -26,10 +26,10 @@ export class NewsService {
     const entitiesToSave = items.reduce((acc, createDto) => {
       if (!existingItemsMap[createDto.link]) {
         const pubDate = new Date(createDto.pubDate || new Date());
-        if (dayjs().diff(pubDate, 'hour') > 24) {
+        if (dayjs().diff(pubDate, 'hour') > 12) {
           return acc;
         }
-        const newsItem = new NewsItem();
+        const newsItem = new Article();
 
         newsItem.link = createDto.link;
         newsItem.sourceId = sourceId;

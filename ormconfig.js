@@ -8,9 +8,9 @@ const {
 } = new URL(process.env.DATABASE_URL);
 
 module.exports = {
-  type: 'postgres',
+  type: process.env.DATABASE_TYPE,
   host,
-  port,
+  port: +port,
   database: pathname.replace('/', ''),
   username,
   password,
@@ -21,5 +21,6 @@ module.exports = {
   synchronize: true,
   extra: {
     ssl: true,
+    encrypt: true,
   },
 };

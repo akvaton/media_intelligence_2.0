@@ -5,7 +5,7 @@ import { populator } from './populator';
 import sortSetter from './sort-setter';
 import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
-const PER_PAGE_LIMIT = 500;
+const PER_PAGE_LIMIT = 50;
 
 export const ListAction = {
   name: 'list',

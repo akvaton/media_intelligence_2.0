@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
-import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FeedDto } from './dto/feed.dto';
 import { Feed } from './entities/feed.entity';
@@ -8,7 +8,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 
 @Injectable()
-export class FeedsService {
+export class FeedsService implements OnModuleInit {
   constructor(
     @InjectRepository(Feed)
     private feedsRepository: Repository<Feed>,
@@ -40,19 +40,11 @@ export class FeedsService {
     await this.feedsRepository.delete(id);
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
-  async checkTheFeedsDataBase() {
-    const feeds = await this.findAll();
-    const jobs = feeds.map((feed) => ({
-      name: 'parse',
-      data: feed,
-      opts: {
-        repeat: { cron: CronExpression.EVERY_MINUTE },
-        jobId: feed.id,
-        removeOnComplete: true,
-      },
-    }));
-
-    await this.feedsQueue.addBulk(jobs);
+  onModuleInit() {
+    console.log(`The module has been initialized.`);
+    this.feedsQueue.add('checkFeeds', {
+      repeat: CronExpression.EVERY_MINUTE,
+      removeOnComplete: true,
+    });
   }
 }

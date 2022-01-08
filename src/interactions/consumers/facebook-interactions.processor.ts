@@ -8,7 +8,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { InteractionsService } from '../interactions.service';
 import { FACEBOOK_QUEUE } from 'src/config/constants';
-import { NewsItem } from 'src/news/entities/news-item.entity';
+import { Article } from 'src/news/entities/news-item.entity';
 
 @Processor(FACEBOOK_QUEUE)
 export class FacebookInteractionsProcessor {
@@ -32,7 +32,7 @@ export class FacebookInteractionsProcessor {
 
   @Process()
   async getInteractions(
-    job: Job<{ newsItem: NewsItem; repeatedTimes: number }>,
+    job: Job<{ newsItem: Article; repeatedTimes: number }>,
   ) {
     const { newsItem } = job.data;
 

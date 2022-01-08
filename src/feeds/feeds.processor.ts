@@ -12,6 +12,7 @@ import { NewsService } from '../news/news.service';
 import { FeedsService } from './feeds.service';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
+import { CronExpression } from '@nestjs/schedule';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
 
@@ -29,13 +30,19 @@ export class FeedsProcessor {
   ) {}
 
   @OnQueueActive()
-  onActive({ data }: Job) {
-    this.logger.debug(`Parsing feed "${data.name}" with url ${data.url}...`);
+  onActive({ data, name }: Job) {
+    if (name === 'parse') {
+      this.logger.debug(`Parsing feed "${data.name}" with url ${data.url}...`);
+    } else {
+      this.logger.debug('Checking for new feeds...');
+    }
   }
 
   @OnQueueCompleted()
-  onCompleted({ data }: Job) {
-    this.logger.debug(`Parsing completed: ${data.name}`);
+  onCompleted({ data, name }: Job) {
+    if (name === 'parse') {
+      this.logger.debug(`Parsing completed: ${data.name}`);
+    }
   }
 
   @Process('parse')
@@ -70,5 +77,21 @@ export class FeedsProcessor {
         this.logger.error(e);
       }
     }
+  }
+
+  @Process('checkFeeds')
+  async checkFeeds() {
+    const feeds = await this.feedsService.findAll();
+    const jobs = feeds.map((feed) => ({
+      name: 'parse',
+      data: feed,
+      opts: {
+        repeat: { cron: CronExpression.EVERY_MINUTE },
+        jobId: feed.id,
+        removeOnComplete: true,
+      },
+    }));
+
+    await this.feedsQueue.addBulk(jobs);
   }
 }

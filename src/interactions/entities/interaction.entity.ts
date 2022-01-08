@@ -6,31 +6,31 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { NewsItem } from 'src/news/entities/news-item.entity';
+import { Article } from 'src/news/entities/news-item.entity';
 
 @Entity('interactions')
 export class Interaction extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'timestamptz', name: 'Time of request' })
+  @Column({ type: 'datetimeoffset', name: 'Time of request' })
   requestTime: Date;
 
-  @Column('int')
+  @Column({ type: 'int', default: -1 })
   facebookInteractions: number;
 
-  @Column({ type: 'int', default: -1, nullable: true })
+  @Column({ type: 'int', default: -1 })
   twitterInteractions: number;
 
-  @Column({ type: 'int', name: 'Audience time' })
+  @Column({ type: 'int', name: 'Audience time', default: -1 })
   audienceTime: number;
 
-  @ManyToOne(() => NewsItem, (newsItem) => newsItem.interactions, {
+  @ManyToOne(() => Article, (newsItem) => newsItem.interactions, {
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'articleId' })
-  article: NewsItem;
+  article: Article;
 
   @Column({ name: 'articleId', type: 'int' })
   articleId: number;

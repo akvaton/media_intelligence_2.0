@@ -3,15 +3,20 @@ import {
   EntitySubscriberInterface,
   EventSubscriber,
   InsertEvent,
-  UpdateEvent,
+  Repository,
 } from 'typeorm';
-import { NewsItem } from './entities/news-item.entity';
+import { Article } from './entities/news-item.entity';
 import { InteractionsService } from 'src/interactions/interactions.service';
 import { Interaction } from 'src/interactions/entities/interaction.entity';
+import { SocialMediaKey } from '../interactions/dto/interaction.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Feed, FeedOrigin } from '../feeds/entities/feed.entity';
 
 @EventSubscriber()
-export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
+export class NewsSubscriber implements EntitySubscriberInterface<Article> {
   constructor(
+    @InjectRepository(Feed)
+    private feedsRepository: Repository<Feed>,
     private interactionsService: InteractionsService,
     connection: Connection,
   ) {
@@ -19,30 +24,24 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
   }
 
   listenTo() {
-    return NewsItem;
+    return Article;
   }
 
-  async afterInsert(event: InsertEvent<NewsItem>) {
-    return Promise.all([
-      this.interactionsService.enqueueFacebookInteractionsProcessing({
+  async afterInsert(event: InsertEvent<Article>) {
+    const { entity } = event;
+    const feed = await this.feedsRepository.findOne(entity.sourceId);
+    if (feed.origin === FeedOrigin.UKR) {
+      return this.interactionsService.enqueueUkrainianAudienceTimeMeasuring({
         newsItem: event.entity,
-      }),
-      this.interactionsService.enqueueTwitterInteractionsProcessing(
+      });
+    } else if (feed.origin === FeedOrigin.USA) {
+      return this.interactionsService.enqueueTwitterInteractionsProcessing(
         event.entity,
-      ),
-    ]);
-  }
-
-  async afterUpdate(event: UpdateEvent<NewsItem>) {
-    if (event.entity?.deletedAt) {
-      await Promise.all([
-        this.interactionsService.cancelEnqueuedJobsForNewsItem(event.entity),
-        this.interactionsService.delete({ articleId: event.entity.id }),
-      ]);
+      );
     }
   }
 
-  async afterLoad(newsItem: NewsItem): Promise<void> {
+  async afterLoad(newsItem: Article): Promise<void> {
     let delta = 0;
     const interactions = await this.interactionsService.find({
       where: { articleId: newsItem.id },
@@ -61,15 +60,11 @@ export class NewsSubscriber implements EntitySubscriberInterface<NewsItem> {
 
     newsItem.graphData =
       this.interactionsService.getGraphData(normalizedData) || [];
-    newsItem.facebookRegressionCoefficient =
-      this.interactionsService.getRegressionCoefficient(
-        newsItem.graphData.slice(newsItem.startIndex, newsItem.endIndex),
-        'lnFacebookInteractions',
-      );
-    newsItem.twitterRegressionCoefficient =
-      this.interactionsService.getRegressionCoefficient(
-        newsItem.graphData.slice(newsItem.startIndex, newsItem.endIndex),
-        'lnTwitterInteractions',
-      );
+    debugger;
+    ['facebook', 'twitter'].forEach((key: SocialMediaKey) => {
+      newsItem[`${key}Regression`] = this.interactionsService
+        .getRegressionCoefficient(newsItem, key)
+        .toFixed(3);
+    });
   }
 }

@@ -7,7 +7,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { InteractionsService } from '../interactions.service';
-import { NewsItem } from 'src/news/entities/news-item.entity';
+import { Article } from 'src/news/entities/news-item.entity';
 import { TWITTER_QUEUE } from 'src/config/constants';
 
 @Processor(TWITTER_QUEUE)
@@ -27,7 +27,7 @@ export class TwitterInteractionsProcessor {
   }
 
   @Process()
-  processTwitterJobs(job: Job<NewsItem>) {
+  processTwitterJobs(job: Job<Article>) {
     return this.interactionsService.processTwitterInteractions(job.data);
   }
 }

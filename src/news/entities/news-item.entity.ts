@@ -6,14 +6,13 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   JoinColumn,
-  DeleteDateColumn,
 } from 'typeorm';
 import { Feed } from 'src/feeds/entities/feed.entity';
 import { Interaction } from 'src/interactions/entities/interaction.entity';
 import { GraphData } from '../../interactions/dto/interaction.dto';
 
 @Entity('articles')
-export class NewsItem extends BaseEntity {
+export class Article extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -23,7 +22,11 @@ export class NewsItem extends BaseEntity {
   @Column()
   title: string;
 
-  @Column({ type: 'timestamptz', name: 'Date of Publication', nullable: true })
+  @Column({
+    type: 'datetimeoffset',
+    name: 'Date of Publication',
+    nullable: true,
+  })
   pubDate: Date;
 
   @ManyToOne(() => Feed, (feed) => feed.articles, {
@@ -36,17 +39,20 @@ export class NewsItem extends BaseEntity {
   @Column({ name: 'sourceId', type: 'int', nullable: false })
   sourceId: number;
 
-  @Column({ default: 5 })
-  startIndex: number;
+  @Column({ type: 'tinyint', nullable: true })
+  facebookStartIndex: number;
 
-  @Column({ default: 15 })
-  endIndex: number;
+  @Column({ type: 'tinyint', nullable: true })
+  facebookEndIndex: number;
+
+  @Column({ type: 'tinyint', nullable: true })
+  twitterStartIndex: number;
+
+  @Column({ type: 'tinyint', nullable: true })
+  twitterEndIndex: number;
 
   @OneToMany(() => Interaction, (interaction) => interaction.article)
   interactions: Interaction[];
-
-  @DeleteDateColumn()
-  deletedAt?: Date;
 
   @Column({ default: -1 })
   twitterInteractions: number;
@@ -54,9 +60,10 @@ export class NewsItem extends BaseEntity {
   @Column({ default: -1 })
   facebookInteractions: number;
 
+  // Virtual columns:
   public graphData: GraphData;
 
-  public facebookRegressionCoefficient: unknown;
+  public facebookRegression: unknown;
 
-  public twitterRegressionCoefficient: unknown;
+  public twitterRegression: unknown;
 }

@@ -6,19 +6,23 @@ import { BullModule } from '@nestjs/bull';
 import { TwitterInteractionsProcessor } from './consumers/twitter-interactions.processor';
 import { HttpModule } from '@nestjs/axios';
 import { FacebookInteractionsProcessor } from './consumers/facebook-interactions.processor';
-import { FACEBOOK_QUEUE, TWITTER_QUEUE } from 'src/config/constants';
-import { NewsItem } from '../news/entities/news-item.entity';
+import {
+  TWITTER_QUEUE,
+  AUDIENCE_TIME_QUEUE,
+  FACEBOOK_QUEUE,
+} from 'src/config/constants';
+import { Article } from '../news/entities/news-item.entity';
+import { AudienceTimeProcessor } from './consumers/audience-time.processor';
 
 @Module({
   imports: [
     HttpModule,
-    TypeOrmModule.forFeature([Interaction, NewsItem]),
+    TypeOrmModule.forFeature([Interaction, Article]),
+    BullModule.registerQueue({
+      name: AUDIENCE_TIME_QUEUE,
+    }),
     BullModule.registerQueue({
       name: FACEBOOK_QUEUE,
-      limiter: {
-        max: 200,
-        duration: 1000 * 60 * 60, // 1 hour
-      },
     }),
     BullModule.registerQueue({
       name: TWITTER_QUEUE,
@@ -33,6 +37,7 @@ import { NewsItem } from '../news/entities/news-item.entity';
     InteractionsService,
     TwitterInteractionsProcessor,
     FacebookInteractionsProcessor,
+    AudienceTimeProcessor,
   ],
   exports: [InteractionsService],
 })

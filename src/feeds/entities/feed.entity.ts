@@ -5,7 +5,12 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { NewsItem } from 'src/news/entities/news-item.entity';
+import { Article } from 'src/news/entities/news-item.entity';
+
+export enum FeedOrigin {
+  UKR = 'UKR',
+  USA = 'USA',
+}
 
 @Entity()
 export class Feed extends BaseEntity {
@@ -18,6 +23,12 @@ export class Feed extends BaseEntity {
   @Column({ unique: true })
   url: string;
 
-  @OneToMany(() => NewsItem, (article) => article.source)
-  articles: NewsItem[];
+  @OneToMany(() => Article, (article) => article.source)
+  articles: Article[];
+
+  @Column({
+    enum: FeedOrigin,
+    default: FeedOrigin.USA,
+  })
+  origin: string;
 }
