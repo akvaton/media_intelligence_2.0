@@ -7,7 +7,8 @@ import AdminJS, {
   AdminJSOptions,
   NotFoundError,
 } from 'adminjs';
-import ListAction from './utils/custom-news-item-list';
+import ListAction from './utils/custom-article-list';
+import EditAction from './utils/custom-article-edit';
 
 export const ADMIN_JS_OPTIONS: AdminJSOptions = {
   rootPath: '/',
@@ -29,6 +30,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
         parent: null,
         actions: {
           list: ListAction,
+          edit: EditAction,
           exportData: {
             icon: 'View',
             actionType: 'bulk',
