@@ -30,14 +30,18 @@ export class AudienceTimeProcessor {
   @OnQueueCompleted()
   onCompleted({ id, data, name }: Job) {
     this.logger.debug(`Completed job with id: ${id}!`);
+    const { newsItem, repeatedTimes } = data;
 
-    if (
-      name === TWITTER_AUDIENCE_TIME_JOB &&
-      data.repeatedTimes !== INTERACTIONS_PROCESSES_LIMIT - 1
-    ) {
-      const { newsItem, repeatedTimes } = data;
-
+    if (repeatedTimes >= INTERACTIONS_PROCESSES_LIMIT - 1) {
+      return;
+    }
+    if (name === TWITTER_AUDIENCE_TIME_JOB) {
       this.interactionsService.enqueueTwitterAudienceTimeMeasuring({
+        newsItem,
+        repeatedTimes: repeatedTimes + 1,
+      });
+    } else if (name === UKRAINIAN_AUDIENCE_TIME_JOB) {
+      this.interactionsService.enqueueUkrainianAudienceTimeMeasuring({
         newsItem,
         repeatedTimes: repeatedTimes + 1,
       });
