@@ -151,26 +151,31 @@ export class InteractionsService {
   private async getTwitterInteractions(url: string, timeSlots: Array<string>) {
     const fullUrl = `url:"${url}"`;
     const startTime = dayjs(timeSlots[0]).subtract(1, 'm').toISOString();
+    const now = dayjs();
+    const lastTimeSlot = dayjs(timeSlots[timeSlots.length - 1]);
+    const endTime = lastTimeSlot.isAfter(now) ? now : lastTimeSlot;
     try {
       let tweetsSum = 0;
       const result = await this.twitterClient.v2.tweetCountRecent(fullUrl, {
         granularity: 'minute',
         start_time: startTime,
-        end_time: timeSlots[timeSlots.length - 1],
+        end_time: endTime.toISOString(),
       });
-      const resultArray = result.data.reduce((acc, { tweet_count, end }) => {
+      const resultMap = result.data.reduce((acc, { tweet_count, end }) => {
         acc[end] = tweetsSum += tweet_count;
 
         return acc;
       }, {});
 
       return timeSlots.reduce((acc, dateISOString) => {
-        acc[dateISOString] = resultArray[dateISOString];
+        acc[dateISOString] = resultMap[dateISOString];
 
         return acc;
       }, {});
     } catch (e) {
-      this.logger.error(`${e}, Full url: ${fullUrl}, Start time: ${startTime}`);
+      this.logger.error(
+        `${e}, Full url: ${fullUrl}, Start time: ${startTime}, End time: ${endTime}`,
+      );
       throw e;
     }
   }
