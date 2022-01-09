@@ -153,13 +153,15 @@ export class InteractionsService {
     const startTime = dayjs(timeSlots[0]).subtract(1, 'm').toISOString();
     const now = dayjs();
     const lastTimeSlot = dayjs(timeSlots[timeSlots.length - 1]);
-    const endTime = lastTimeSlot.isAfter(now) ? now : lastTimeSlot;
+    const endTime = lastTimeSlot.isAfter(now)
+      ? undefined
+      : lastTimeSlot.toISOString();
     try {
       let tweetsSum = 0;
       const result = await this.twitterClient.v2.tweetCountRecent(fullUrl, {
         granularity: 'minute',
         start_time: startTime,
-        end_time: endTime.toISOString(),
+        end_time: endTime,
       });
       const resultMap = result.data.reduce((acc, { tweet_count, end }) => {
         acc[end] = tweetsSum += tweet_count;
