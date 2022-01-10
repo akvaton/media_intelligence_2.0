@@ -65,11 +65,15 @@ export class InteractionsService {
   }
 
   enqueueTwitterInteractionsProcessing(newsItem: Article) {
+    const { pubDate } = newsItem;
+    const periodEnd = dayjs(pubDate).add(INTERACTIONS_PROCESSES_FINISH, 'ms');
+    const delay = periodEnd.diff(dayjs());
+
     return this.twitterInteractionsQueue.add(newsItem, {
       removeOnComplete: true,
       jobId: newsItem.id,
       timeout: 1000 * 5,
-      delay: INTERACTIONS_PROCESSES_FINISH,
+      delay,
       attempts: 5,
       backoff: { type: 'fixed', delay: 1000 * 60 },
     });
@@ -277,7 +281,11 @@ export class InteractionsService {
       interaction.facebookInteractions = await this.getFacebookInteractions(
         article,
       );
-      await this.interactionsRepository.save(interaction);
+      article.facebookInteractions = interaction.facebookInteractions;
+      await Promise.all([
+        this.interactionsRepository.save(interaction),
+        this.newsRepository.save(article),
+      ]);
     } catch (e) {
       this.logger.error(e);
       throw e;
@@ -332,7 +340,10 @@ export class InteractionsService {
 
     const { id } = await this.interactionsRepository.save(interaction);
 
-    return this.facebookInteractionsQueue.add({ article, interactionId: id });
+    return this.enqueueFacebookInteractionsProcessing({
+      article,
+      interactionId: id,
+    });
   }
 
   public async measureTwitterAudienceTime(
@@ -356,14 +367,11 @@ export class InteractionsService {
             dayjs(interaction.requestTime).toISOString(),
           ),
         },
-        relations: ['article', 'article.source'],
+        // relations: ['article', 'article.source'],
       });
 
       interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
-        if (curr.article.source.origin === FeedOrigin.USA) {
-          return acc + curr.twitterInteractions;
-        }
-        return acc;
+        return acc + curr.twitterInteractions;
       }, 0);
 
       return await this.interactionsRepository.save(interaction);

@@ -25,7 +25,7 @@ export class FeedsSubscriber implements EntitySubscriberInterface<Feed> {
 
   afterInsert(event: InsertEvent<Feed>) {
     return this.feedsQueue.add('parse', event.entity, {
-      repeat: { cron: CronExpression.EVERY_MINUTE },
+      repeat: { cron: CronExpression.EVERY_10_MINUTES },
       removeOnComplete: true,
       jobId: event.entity.id,
     });

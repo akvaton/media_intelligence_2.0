@@ -86,7 +86,7 @@ export class FeedsProcessor {
       name: 'parse',
       data: feed,
       opts: {
-        repeat: { cron: CronExpression.EVERY_MINUTE },
+        repeat: { cron: CronExpression.EVERY_10_MINUTES },
         jobId: feed.id,
         removeOnComplete: true,
       },

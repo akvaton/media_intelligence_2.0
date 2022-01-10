@@ -29,16 +29,6 @@ const GraphData = ({ record }) => {
     );
 
     [
-      // {
-      //   title: 'Full Graph Facebook',
-      //   id: 'containerFb',
-      //   data: fullGraphDataFb,
-      // },
-      // {
-      //   title: 'Selected Fragment Facebook',
-      //   id: 'selectedFragmentFb',
-      //   data: selectedFragmentDataFb,
-      // },
       {
         title: 'Full Graph Twitter',
         id: 'containerTwitter',
@@ -48,6 +38,16 @@ const GraphData = ({ record }) => {
         title: 'Selected Fragment Twitter',
         id: 'selectedFragmentTwitter',
         data: selectedFragmentDataTwitter,
+      },
+      {
+        title: 'Full Graph Facebook',
+        id: 'containerFb',
+        data: fullGraphDataFb,
+      },
+      {
+        title: 'Selected Fragment Facebook',
+        id: 'selectedFragmentFb',
+        data: selectedFragmentDataFb,
       },
     ].forEach(({ title, id, data }) => {
       window.Highcharts.chart(id, {

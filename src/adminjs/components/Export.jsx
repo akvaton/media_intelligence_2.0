@@ -6,7 +6,8 @@ const ExportInteractions = (props) => {
 
   useEffect(() => {
     const newsData = props.records.map(({ params, populated }) => {
-      const { title, link, pubDate, twitterRegression } = params;
+      const { title, link, pubDate, twitterRegression, facebookRegression } =
+        params;
       const { sourceId } = populated;
       const { name } = sourceId.params;
 
@@ -14,7 +15,8 @@ const ExportInteractions = (props) => {
         title,
         link,
         ['Publication Date']: pubDate,
-        ['Twitter Regression Coefficient']: twitterRegression,
+        ['Twitter interactive potential']: twitterRegression,
+        ['Facebook interactive potential']: facebookRegression,
         ['Source Feed']: name,
       };
     });
