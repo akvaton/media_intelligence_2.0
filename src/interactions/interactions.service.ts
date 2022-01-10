@@ -57,7 +57,7 @@ export class InteractionsService {
       {
         removeOnComplete: true,
         jobId: interactionId,
-        timeout: 1000 * 5,
+        timeout: 1000 * 10,
         attempts: 3,
         backoff: { type: 'fixed', delay: 5000 * 60 },
       },
@@ -72,7 +72,7 @@ export class InteractionsService {
     return this.twitterInteractionsQueue.add(newsItem, {
       removeOnComplete: true,
       jobId: newsItem.id,
-      timeout: 1000 * 5,
+      timeout: 1000 * 10,
       delay,
       attempts: 5,
       backoff: { type: 'fixed', delay: 1000 * 60 },
@@ -303,7 +303,7 @@ export class InteractionsService {
       {
         removeOnComplete: true,
         jobId: newsItem.id,
-        timeout: 1000 * 5,
+        timeout: 1000 * 10,
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
         attempts: 5,
         backoff: { type: 'fixed', delay: 1000 * 60 },
@@ -321,7 +321,7 @@ export class InteractionsService {
       {
         removeOnComplete: true,
         jobId: newsItem.id,
-        timeout: 1000 * 5,
+        timeout: 1000 * 10,
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
         attempts: 5,
         backoff: { type: 'fixed', delay: 1000 * 60 },
