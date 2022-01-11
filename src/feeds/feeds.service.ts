@@ -55,6 +55,6 @@ export class FeedsService implements OnModuleInit {
   }
 
   onModuleInit() {
-    setInterval(this.enqueueFeedsCheck, INTERACTIONS_PROCESSES_EVERY);
+    setInterval(() => this.enqueueFeedsCheck(), INTERACTIONS_PROCESSES_EVERY);
   }
 }
