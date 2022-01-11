@@ -13,6 +13,7 @@ import { FeedsService } from './feeds.service';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { CronExpression } from '@nestjs/schedule';
+import { CHECK_FEEDS, PARSE_JOB } from '../config/constants';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
 
@@ -79,19 +80,20 @@ export class FeedsProcessor {
     }
   }
 
-  @Process('checkFeeds')
-  async checkFeeds() {
+  @Process(CHECK_FEEDS)
+  async s() {
     const feeds = await this.feedsService.findAll();
-    const jobs = feeds.map((feed) => ({
-      name: 'parse',
-      data: feed,
-      opts: {
-        repeat: { cron: CronExpression.EVERY_10_MINUTES },
-        jobId: feed.id,
-        removeOnComplete: true,
-      },
-    }));
 
-    await this.feedsQueue.addBulk(jobs);
+    await Promise.all(
+      feeds.map((feed) =>
+        this.feedsQueue.add(PARSE_JOB, feed, {
+          repeat: {
+            cron: CronExpression.EVERY_10_MINUTES,
+          },
+          jobId: feed.id,
+          removeOnComplete: true,
+        }),
+      ),
+    );
   }
 }
