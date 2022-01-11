@@ -41,9 +41,12 @@ export class FeedsService implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.feedsQueue.add('checkFeeds', {
-      repeat: CronExpression.EVERY_30_MINUTES,
-      // removeOnComplete: true,
-    });
+    this.feedsQueue.add(
+      'checkFeeds',
+      {},
+      {
+        repeat: { cron: CronExpression.EVERY_30_MINUTES },
+      },
+    );
   }
 }
