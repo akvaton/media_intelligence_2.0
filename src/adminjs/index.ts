@@ -10,6 +10,8 @@ import AdminJS, {
 import ListAction from './utils/custom-article-list';
 import EditAction from './utils/custom-article-edit';
 
+let lastPosition = 1000;
+
 export const ADMIN_JS_OPTIONS: AdminJSOptions = {
   rootPath: '/',
   assets: {
@@ -75,7 +77,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           facebookInteractions: {
             isVisible: { list: true, filter: false, show: true, edit: false },
             type: 'number',
-            position: 1000,
+            position: lastPosition++,
           },
           minFacebookInteractions: {
             isVisible: { filter: true },
@@ -89,16 +91,18 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           maxTwitterInteractions: {
             isVisible: { filter: true },
           },
-          facebookRegression: {
-            isVisible: { show: true },
-          },
-          twitterRegression: {
-            isVisible: { show: true },
-          },
           twitterInteractions: {
             isVisible: { list: true, filter: false, show: true, edit: false },
             type: 'number',
-            position: 1001,
+            position: lastPosition++,
+          },
+          facebookRegression: {
+            isVisible: { show: true, list: true },
+            position: lastPosition++,
+          },
+          twitterRegression: {
+            isVisible: { show: true, list: true },
+            position: lastPosition++,
           },
           graphData: {
             isVisible: { show: true },

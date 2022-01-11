@@ -60,10 +60,9 @@ export class Article extends BaseEntity {
   @Column({ default: -1 })
   facebookInteractions: number;
 
-  // Virtual columns:
-  public graphData: GraphData;
+  @Column({ default: -1, type: 'float' })
+  facebookRegression: number;
 
-  public facebookRegression: unknown;
-
-  public twitterRegression: unknown;
+  @Column({ default: -1, type: 'float' })
+  twitterRegression: number;
 }

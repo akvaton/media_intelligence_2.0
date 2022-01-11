@@ -99,10 +99,13 @@ export class InteractionsService {
     });
   }
 
-  getRegressionCoefficient(newsItem: Article, key: SocialMediaKey) {
-    const { graphData } = newsItem;
-    const startIndex = newsItem[`${key}StartIndex`] || undefined;
-    const endIndex = newsItem[`${key}EndIndex`] || undefined;
+  getRegressionCoefficient(
+    newsItem: Article,
+    graphData: GraphData,
+    key: SocialMediaKey,
+  ) {
+    const startIndex = newsItem[`${key}StartIndex`];
+    const endIndex = newsItem[`${key}EndIndex`];
     const result = graphData.slice(startIndex, endIndex).reduce(
       (accumulator, currentItem) => {
         accumulator.xSum += currentItem.audienceTime;
@@ -117,11 +120,11 @@ export class InteractionsService {
       { xSum: 0, ySum: 0, xySum: 0, x2Sum: 0, xAverage: 0 },
     );
     const { xSum, ySum, xySum, x2Sum, xAverage } = result;
-
-    return (
+    const coefficient =
       ((xSum / xAverage) * xySum - xSum * ySum) /
-      ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2))
-    );
+      ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2));
+
+    return isNaN(coefficient) ? -1 : coefficient;
   }
 
   public async cancelEnqueuedJobsForNewsItem(newsItemId) {

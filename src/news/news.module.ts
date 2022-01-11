@@ -7,6 +7,7 @@ import { InteractionsModule } from '../interactions/interactions.module';
 import { NewsSubscriber } from './news.subscriber';
 import { NEWS_QUEUE } from '../config/constants';
 import { Feed } from '../feeds/entities/feed.entity';
+import { NewsController } from './news.controller';
 
 @Module({
   imports: [
@@ -18,5 +19,6 @@ import { Feed } from '../feeds/entities/feed.entity';
   ],
   providers: [NewsService, NewsSubscriber],
   exports: [NewsService],
+  controllers: [NewsController],
 })
 export class NewsModule {}
