@@ -25,7 +25,7 @@ export const ListAction = {
     if (perPage) {
       perPage = +perPage > PER_PAGE_LIMIT ? PER_PAGE_LIMIT : +perPage;
     } else {
-      perPage = 100; // default
+      perPage = PER_PAGE_LIMIT; // default
     }
     page = Number(page) || 1;
     const listProperties = resource.decorate().getListProperties();
@@ -84,15 +84,19 @@ export const ListAction = {
       );
     }
 
+    console.time('List');
     // @ts-expect-error Poor documentation
     const records = await resource.find(filter, {
       limit: perPage,
       offset: (page - 1) * perPage,
       sort,
     });
+    console.timeEnd('List');
+    console.time('Populator');
     const populatedRecords = await populator(records);
     // eslint-disable-next-line no-param-reassign
     context.records = populatedRecords;
+    console.timeEnd('Populator');
     // @ts-expect-error Poor documentation
     const total = await resource.count(filter);
     return {
