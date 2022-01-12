@@ -3,13 +3,14 @@ import axios from 'axios';
 
 const GraphData = ({ record }) => {
   useEffect(() => {
-    axios.get(`/news/graph/${record.id}`).then(({ data: graphData }) => {
+    axios.get(`/articles/${record.id}`).then(({ data }) => {
+      const { articleData, graphData } = data;
       const {
         facebookStartIndex,
         facebookEndIndex,
         twitterStartIndex,
         twitterEndIndex,
-      } = record.params;
+      } = articleData;
       const fullGraphDataFb = graphData.map((item) => [
         item.audienceTime,
         item.facebook,
