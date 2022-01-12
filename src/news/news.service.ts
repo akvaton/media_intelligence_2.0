@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as dayjs from 'dayjs';
 import { Article } from './entities/news-item.entity';
 import { In } from 'typeorm';
-import * as dayjs from 'dayjs';
+import isValidUrl from 'src/utils/is-valid-url';
 
 @Injectable()
 export class NewsService {
@@ -23,20 +24,26 @@ export class NewsService {
 
       return acc;
     }, {});
-    const entitiesToSave = items.reduce((acc, createDto) => {
-      if (!existingItemsMap[createDto.link]) {
-        const pubDate = new Date(createDto.pubDate || new Date());
+    const entitiesToSave = items.reduce((acc, { link, pubDate, title }) => {
+      if (!existingItemsMap[link] && isValidUrl(link)) {
         if (dayjs().diff(pubDate, 'hour') > 12) {
           return acc;
         }
+
+        const now = new Date();
+        const publicationDayJsDate = dayjs(pubDate);
+        const publicationDate =
+          pubDate && publicationDayJsDate.isBefore(now)
+            ? publicationDayJsDate.toDate()
+            : now;
         const newsItem = new Article();
 
-        newsItem.link = createDto.link;
+        newsItem.link = link;
         newsItem.sourceId = sourceId;
-        newsItem.title = createDto.title;
-        newsItem.pubDate = pubDate;
+        newsItem.title = title;
+        newsItem.pubDate = publicationDate;
 
-        existingItemsMap[createDto.link] = true;
+        existingItemsMap[link] = true;
         acc.push(newsItem);
       }
 
@@ -44,13 +51,5 @@ export class NewsService {
     }, []);
 
     return this.newsRepository.save(entitiesToSave);
-  }
-
-  findAll() {
-    return this.newsRepository.find();
-  }
-
-  findOne(id: number) {
-    return this.newsRepository.findOne(id);
   }
 }
