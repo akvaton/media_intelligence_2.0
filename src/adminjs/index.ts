@@ -111,7 +111,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
                 '../../src/adminjs/components/GraphData.jsx',
               ),
             },
-            position: 999,
+            position: lastPosition++,
           },
           facebookStartIndex: {
             isVisible: { list: false, filter: false, show: true, edit: true },
@@ -134,6 +134,12 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           },
           id: {
             isVisible: { list: true, show: true },
+          },
+          title: {
+            isVisible: { edit: false, list: true, show: true, filter: true },
+          },
+          sourceId: {
+            isVisible: { edit: false, list: true, show: true, filter: true },
           },
         },
       },

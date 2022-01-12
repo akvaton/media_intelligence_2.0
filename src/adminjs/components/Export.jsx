@@ -12,8 +12,8 @@ const ExportInteractions = (props) => {
       const { name } = sourceId.params;
 
       return {
-        title,
-        link,
+        ['Title']: title,
+        ['Link']: link,
         ['Publication Date']: pubDate,
         ['Twitter interactive potential']: twitterRegression,
         ['Facebook interactive potential']: facebookRegression,
@@ -22,9 +22,10 @@ const ExportInteractions = (props) => {
     });
     const workSheet = XLSX.utils.json_to_sheet(newsData);
     const workBook = XLSX.utils.book_new();
+    const date = new Date().toISOString();
 
-    XLSX.utils.book_append_sheet(workBook, workSheet, 'newsData');
-    XLSX.writeFile(workBook, 'newsData.xlsx');
+    XLSX.utils.book_append_sheet(workBook, workSheet, `Export ${date}`);
+    XLSX.writeFile(workBook, `Export ${date}.xlsx`);
     history.goBack();
   }, []);
 
