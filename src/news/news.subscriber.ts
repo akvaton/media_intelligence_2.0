@@ -50,7 +50,7 @@ export class NewsSubscriber implements EntitySubscriberInterface<Article> {
   }
 
   async beforeUpdate(event: UpdateEvent<Article>) {
-    const article = event.databaseEntity;
+    const article = event.entity;
     const { facebookInteractions, twitterInteractions } = article;
 
     if (facebookInteractions === -1 && twitterInteractions === -1) {
@@ -82,7 +82,7 @@ export class NewsSubscriber implements EntitySubscriberInterface<Article> {
       ['facebook', 'twitter'].forEach((key: SocialMediaKey) => {
         const regressionCoefficient =
           this.interactionsService.getRegressionCoefficient(
-            article,
+            article as Article,
             graphData,
             key,
           );
