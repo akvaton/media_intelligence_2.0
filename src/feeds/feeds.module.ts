@@ -32,12 +32,10 @@ export class FeedsModule {
 
       if (ctype.includes('charset=windows-1251')) {
         response.data = iconv.decode(
-          // @ts-expect-error TODO: Investigate, why
           Buffer.from(response.data),
           'windows-1251',
         );
       } else {
-        // @ts-expect-error TODO: Investigate, why
         response.data = iconv.decode(Buffer.from(response.data), 'utf-8');
       }
       return response;

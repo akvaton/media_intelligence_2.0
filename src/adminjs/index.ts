@@ -1,14 +1,10 @@
 import { Feed } from '../feeds/entities/feed.entity';
 import { Article } from '../news/entities/news-item.entity';
 import { Interaction } from '../interactions/entities/interaction.entity';
-import AdminJS, {
-  ActionContext,
-  ActionRequest,
-  AdminJSOptions,
-  NotFoundError,
-} from 'adminjs';
+import AdminJS, { AdminJSOptions } from 'adminjs';
 import ListAction from './utils/custom-article-list';
 import EditAction from './utils/custom-article-edit';
+import ExportAction from './utils/action-article-export';
 
 let lastPosition = 1000;
 
@@ -33,45 +29,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
         actions: {
           list: ListAction,
           edit: EditAction,
-          exportData: {
-            icon: 'View',
-            actionType: 'bulk',
-            handler: async (
-              request: ActionRequest,
-              response,
-              context: ActionContext,
-            ) => {
-              const { records, resource, h } = context;
-              if (!records || !records.length) {
-                throw new NotFoundError(
-                  'no records were selected.',
-                  'Action#handler',
-                );
-              }
-              if (request.method === 'get') {
-                const recordsInJSON = records.map((record) =>
-                  record.toJSON(context.currentAdmin),
-                );
-                return {
-                  records: recordsInJSON,
-                };
-              }
-              if (request.method === 'post') {
-                return {
-                  records: records.map((record) =>
-                    record.toJSON(context.currentAdmin),
-                  ),
-                  redirectUrl: h.resourceUrl({
-                    resourceId: resource._decorated?.id() || resource.id(),
-                  }),
-                };
-              }
-              throw new Error('method should be either "post" or "get"');
-            },
-            component: AdminJS.bundle(
-              '../../src/adminjs/components/Export.jsx',
-            ),
-          },
+          exportData: ExportAction,
         },
         properties: {
           facebookInteractions: {

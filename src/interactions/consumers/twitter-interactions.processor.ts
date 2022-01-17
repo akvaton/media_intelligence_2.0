@@ -1,10 +1,4 @@
-import {
-  OnQueueActive,
-  OnQueueCompleted,
-  Process,
-  Processor,
-} from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
+import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { InteractionsService } from '../interactions.service';
 import { Article } from 'src/news/entities/news-item.entity';
@@ -12,19 +6,7 @@ import { TWITTER_QUEUE } from 'src/config/constants';
 
 @Processor(TWITTER_QUEUE)
 export class TwitterInteractionsProcessor {
-  private readonly logger = new Logger(TwitterInteractionsProcessor.name);
-
   constructor(private interactionsService: InteractionsService) {}
-
-  @OnQueueActive()
-  onActive({ id, name }: Job) {
-    this.logger.debug(`Processing interactions "${name}" with id ${id}...`);
-  }
-
-  @OnQueueCompleted()
-  onCompleted({ id, name }: Job) {
-    this.logger.debug(`Completed interactions job "${name}" with id ${id}!`);
-  }
 
   @Process()
   processTwitterJobs(job: Job<Article>) {

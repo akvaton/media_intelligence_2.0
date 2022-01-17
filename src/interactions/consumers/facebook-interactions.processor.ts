@@ -16,23 +16,10 @@ export class FacebookInteractionsProcessor {
 
   constructor(private interactionsService: InteractionsService) {}
 
-  @OnQueueActive()
-  onActive({ id }: Job) {
-    this.logger.debug(`Processing job with id: ${id}...`);
-  }
-
-  @OnQueueCompleted()
-  onCompleted({ id }: Job) {
-    this.logger.debug(`Completed job with id: ${id}!`);
-  }
-
   @Process()
   async getInteractions(job: Job<{ article: Article; interactionId: number }>) {
-    const { article, interactionId } = job.data;
+    const { interactionId } = job.data;
 
-    await this.interactionsService.processFacebookInteractions(
-      article,
-      interactionId,
-    );
+    await this.interactionsService.processFacebookInteractions(interactionId);
   }
 }

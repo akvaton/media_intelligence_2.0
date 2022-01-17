@@ -5,18 +5,11 @@ import {
   InsertEvent,
 } from 'typeorm';
 import { Feed } from './entities/feed.entity';
-import { CronExpression } from '@nestjs/schedule';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import { PARSE_JOB } from '../config/constants';
+import { FeedsService } from './feeds.service';
 
 @EventSubscriber()
 export class FeedsSubscriber implements EntitySubscriberInterface<Feed> {
-  constructor(
-    @InjectQueue('feeds')
-    private feedsQueue: Queue,
-    connection: Connection,
-  ) {
+  constructor(private feedsService: FeedsService, connection: Connection) {
     connection.subscribers.push(this);
   }
 
@@ -25,10 +18,6 @@ export class FeedsSubscriber implements EntitySubscriberInterface<Feed> {
   }
 
   afterInsert(event: InsertEvent<Feed>) {
-    return this.feedsQueue.add(PARSE_JOB, event.entity, {
-      repeat: { cron: CronExpression.EVERY_10_MINUTES },
-      removeOnComplete: true,
-      jobId: event.entity.id,
-    });
+    return this.feedsService.enqueueFeedsParsing(event.entity);
   }
 }

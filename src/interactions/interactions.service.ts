@@ -37,7 +37,6 @@ export class InteractionsService {
   constructor(
     @InjectQueue(FACEBOOK_QUEUE)
     private facebookInteractionsQueue: Queue<{
-      article: Article;
       interactionId: number;
     }>,
     @InjectQueue(AUDIENCE_TIME_QUEUE)
@@ -51,11 +50,12 @@ export class InteractionsService {
     private httpService: HttpService,
   ) {}
 
-  enqueueFacebookInteractionsProcessing({ article, interactionId }) {
+  enqueueFacebookInteractionsProcessing({ interactionId }) {
     return this.facebookInteractionsQueue.add(
-      { article, interactionId },
+      { interactionId },
       {
         removeOnComplete: true,
+        removeOnFail: true,
         jobId: interactionId,
         timeout: 1000 * 10,
         attempts: 3,
@@ -71,11 +71,12 @@ export class InteractionsService {
 
     return this.twitterInteractionsQueue.add(newsItem, {
       removeOnComplete: true,
+      removeOnFail: true,
       jobId: newsItem.id,
-      timeout: 1000 * 10,
+      timeout: 1000 * 10, // 10 seconds
       delay,
-      attempts: 5,
-      backoff: { type: 'fixed', delay: 1000 * 60 },
+      attempts: 3,
+      backoff: { type: 'fixed', delay: 1000 * 60 * 15 },
     });
   }
 
@@ -125,18 +126,6 @@ export class InteractionsService {
       ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2));
 
     return isNaN(coefficient) ? -1 : coefficient;
-  }
-
-  public async cancelEnqueuedJobsForNewsItem(newsItemId) {
-    const job = await this.facebookInteractionsQueue.getJob(newsItemId);
-    const isActive = await job?.isActive();
-
-    if (job && !isActive) {
-      await this.interactionsRepository.delete({ articleId: newsItemId });
-      return job.remove();
-    } else if (job && (await job.finished())) {
-      return this.cancelEnqueuedJobsForNewsItem(newsItemId);
-    }
   }
 
   private async getFacebookInteractions(newsItem: Article) {
@@ -273,7 +262,7 @@ export class InteractionsService {
     }
   }
 
-  async processFacebookInteractions(article: Article, interactionId: number) {
+  async processFacebookInteractions(interactionId: number) {
     try {
       const interaction = await this.interactionsRepository.findOne({
         where: { id: interactionId },
@@ -305,6 +294,7 @@ export class InteractionsService {
       { newsItem, repeatedTimes },
       {
         removeOnComplete: true,
+        removeOnFail: true,
         jobId: newsItem.id,
         timeout: 1000 * 10,
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
@@ -323,6 +313,7 @@ export class InteractionsService {
       { newsItem, repeatedTimes },
       {
         removeOnComplete: true,
+        removeOnFail: true,
         jobId: newsItem.id,
         timeout: 1000 * 10,
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
@@ -344,7 +335,6 @@ export class InteractionsService {
     const { id } = await this.interactionsRepository.save(interaction);
 
     return this.enqueueFacebookInteractionsProcessing({
-      article,
       interactionId: id,
     });
   }

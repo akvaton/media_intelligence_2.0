@@ -18,18 +18,10 @@ import { INTERACTIONS_PROCESSES_LIMIT } from '../../config/configuration';
 
 @Processor(AUDIENCE_TIME_QUEUE)
 export class AudienceTimeProcessor {
-  private readonly logger = new Logger(AudienceTimeProcessor.name);
-
   constructor(private interactionsService: InteractionsService) {}
 
-  @OnQueueActive()
-  onActive({ id }: Job) {
-    this.logger.debug(`Processing job with id: ${id}...`);
-  }
-
   @OnQueueCompleted()
-  onCompleted({ id, data, name }: Job) {
-    this.logger.debug(`Completed job with id: ${id}!`);
+  onCompleted({ data, name }: Job) {
     const { newsItem, repeatedTimes } = data;
 
     if (repeatedTimes >= INTERACTIONS_PROCESSES_LIMIT - 1) {

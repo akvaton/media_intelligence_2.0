@@ -85,15 +85,7 @@ export class FeedsProcessor {
     const feeds = await this.feedsService.findAll();
 
     await Promise.all(
-      feeds.map((feed) =>
-        this.feedsQueue.add(PARSE_JOB, feed, {
-          repeat: {
-            cron: CronExpression.EVERY_10_MINUTES,
-          },
-          jobId: feed.id,
-          removeOnComplete: true,
-        }),
-      ),
+      feeds.map((feed) => this.feedsService.enqueueFeedsParsing(feed)),
     );
   }
 }

@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { createBullBoard } from 'bull-board';
-import { BullAdapter } from 'bull-board/bullAdapter';
+import { createBullBoard } from '@bull-board/api';
 import {
   FACEBOOK_QUEUE,
   TWITTER_QUEUE,
   AUDIENCE_TIME_QUEUE,
+  BULL_QUEUES_ROUTE,
 } from './config/constants';
+import { BullAdapter } from '@bull-board/api/bullAdapter';
+import { ExpressAdapter } from '@bull-board/express';
+
+const serverAdapter = new ExpressAdapter();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,13 +20,13 @@ async function bootstrap() {
     `BullQueue_${TWITTER_QUEUE}`,
     `BullQueue_${AUDIENCE_TIME_QUEUE}`,
   ];
-  const { router: bullRouter } = createBullBoard(
-    queues.map((queueName) => {
-      return new BullAdapter(app.get(queueName));
-    }),
-  );
+  const {} = createBullBoard({
+    queues: queues.map((queueName) => new BullAdapter(app.get(queueName))),
+    serverAdapter,
+  });
+  serverAdapter.setBasePath(`/${BULL_QUEUES_ROUTE}`);
 
-  app.use('/bull-board', bullRouter);
+  app.use(`/${BULL_QUEUES_ROUTE}`, serverAdapter.getRouter());
   app.enableShutdownHooks();
 
   await app.listen(process.env.PORT || 3333);
