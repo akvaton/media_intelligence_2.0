@@ -55,7 +55,6 @@ export class InteractionsService {
       { interactionId },
       {
         removeOnComplete: true,
-        removeOnFail: true,
         jobId: interactionId,
         timeout: 1000 * 10,
         attempts: 3,
@@ -73,7 +72,6 @@ export class InteractionsService {
       { id, link },
       {
         removeOnComplete: true,
-        removeOnFail: true,
         jobId: newsItem.id,
         timeout: 1000 * 10, // 10 seconds
         delay,
