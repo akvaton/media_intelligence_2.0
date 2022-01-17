@@ -37,6 +37,19 @@ AdminJS.registerAdapter({ Database, Resource });
     TypeOrmModule.forRoot(),
     AdminModule.createAdmin({
       adminJsOptions: ADMIN_JS_OPTIONS,
+      auth: {
+        authenticate: async (email, password) => {
+          if (
+            email === process.env.BASIC_USER &&
+            password === process.env.BASIC_PASSWORD
+          ) {
+            return Promise.resolve({ email: password });
+          }
+          return null;
+        },
+        cookieName: 'newsName',
+        cookiePassword: 'newsPass',
+      },
     }),
     FeedsModule,
     InteractionsModule,
