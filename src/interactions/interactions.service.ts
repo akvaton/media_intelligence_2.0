@@ -65,19 +65,22 @@ export class InteractionsService {
   }
 
   enqueueTwitterInteractionsProcessing(newsItem: Article) {
-    const { pubDate } = newsItem;
+    const { pubDate, id, link } = newsItem;
     const periodEnd = dayjs(pubDate).add(INTERACTIONS_PROCESSES_FINISH, 'ms');
     const delay = periodEnd.diff(dayjs());
 
-    return this.twitterInteractionsQueue.add(newsItem, {
-      removeOnComplete: true,
-      removeOnFail: true,
-      jobId: newsItem.id,
-      timeout: 1000 * 10, // 10 seconds
-      delay,
-      attempts: 3,
-      backoff: { type: 'fixed', delay: 1000 * 60 * 15 },
-    });
+    return this.twitterInteractionsQueue.add(
+      { id, link },
+      {
+        removeOnComplete: true,
+        removeOnFail: true,
+        jobId: newsItem.id,
+        timeout: 1000 * 10, // 10 seconds
+        delay,
+        attempts: 3,
+        backoff: { type: 'fixed', delay: 1000 * 60 * 15 },
+      },
+    );
   }
 
   getGraphData(interactions: Array<Interaction>): GraphData {
@@ -200,15 +203,19 @@ export class InteractionsService {
     }
   }
 
-  async processTwitterInteractions(newsItem: Article) {
+  async processTwitterInteractions(articleId: number) {
     // eslint-disable-next-line prefer-const
     let [interactions, newsItemEntity] = await Promise.all([
       this.interactionsRepository.find({
-        where: { articleId: newsItem.id },
+        where: { articleId },
         order: { requestTime: 'ASC' },
       }),
-      this.newsRepository.findOne(newsItem.id, { relations: ['source'] }),
+      this.newsRepository.findOne(articleId, { relations: ['source'] }),
     ]);
+
+    if (!newsItemEntity) {
+      throw new Error('Article not found');
+    }
 
     if (newsItemEntity.source.origin === FeedOrigin.USA) {
       const publicationDate = dayjs(newsItemEntity.pubDate);
@@ -221,7 +228,7 @@ export class InteractionsService {
             .add(INTERACTIONS_PROCESSES_EVERY * index, 'ms')
             .startOf('minute')
             .toDate();
-          interaction.articleId = newsItem.id;
+          interaction.articleId = articleId;
           return interaction;
         },
       );
@@ -233,7 +240,7 @@ export class InteractionsService {
 
     const timeSlots = interactions.map((i) => i.requestTime.toISOString());
     const twitterInteractions = await this.getTwitterInteractions(
-      newsItem.link,
+      newsItemEntity.link,
       timeSlots,
     );
 

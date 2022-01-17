@@ -1,10 +1,4 @@
-import {
-  InjectQueue,
-  OnQueueActive,
-  OnQueueCompleted,
-  Process,
-  Processor,
-} from '@nestjs/bull';
+import { InjectQueue, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { Feed } from './entities/feed.entity';
@@ -12,7 +6,6 @@ import { NewsService } from '../news/news.service';
 import { FeedsService } from './feeds.service';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
-import { CronExpression } from '@nestjs/schedule';
 import { CHECK_FEEDS, PARSE_JOB } from '../config/constants';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
@@ -30,23 +23,7 @@ export class FeedsProcessor {
     private feedsQueue: Queue,
   ) {}
 
-  @OnQueueActive()
-  onActive({ data, name }: Job) {
-    if (name === 'parse') {
-      this.logger.debug(`Parsing feed "${data.name}" with url ${data.url}...`);
-    } else {
-      this.logger.debug('Checking for new feeds...');
-    }
-  }
-
-  @OnQueueCompleted()
-  onCompleted({ data, name }: Job) {
-    if (name === 'parse') {
-      this.logger.debug(`Parsing completed: ${data.name}`);
-    }
-  }
-
-  @Process('parse')
+  @Process(PARSE_JOB)
   async handleParse(job: Job<Feed>) {
     const { url, id } = job.data;
     const feed = await this.feedsService.findOne(id);
@@ -75,7 +52,10 @@ export class FeedsProcessor {
           job.data.id,
         );
       } catch (e) {
-        this.logger.error(e);
+        this.logger.error(
+          `Parse job failed: ${e}; Data: ${JSON.stringify(job.data)}`,
+        );
+        throw e;
       }
     }
   }

@@ -10,6 +10,6 @@ export class TwitterInteractionsProcessor {
 
   @Process()
   processTwitterJobs(job: Job<Article>) {
-    return this.interactionsService.processTwitterInteractions(job.data);
+    return this.interactionsService.processTwitterInteractions(job.data.id);
   }
 }
