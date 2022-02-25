@@ -23,4 +23,5 @@ module.exports = {
     ssl: true,
     encrypt: true,
   },
+  requestTimeout: 120000,
 };
