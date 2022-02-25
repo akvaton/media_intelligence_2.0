@@ -374,6 +374,9 @@ export class InteractionsService {
         .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
         .add(1, 'minute')
         .toISOString();
+      this.logger.debug(
+        `Calling inRangeInteractions for article ${article.id}`,
+      );
       const inRangeInteractions = await this.interactionsRepository.find({
         where: {
           requestTime: Between(
@@ -383,6 +386,9 @@ export class InteractionsService {
         },
         // relations: ['article', 'article.source'],
       });
+      this.logger.debug(
+        `Retrieved inRangeInteractions for article ${article.id}`,
+      );
 
       interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
         return acc + curr.twitterInteractions;
