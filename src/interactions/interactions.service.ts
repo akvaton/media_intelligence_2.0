@@ -203,9 +203,11 @@ export class InteractionsService {
 
   async processTwitterInteractions(articleId: number) {
     let interactions = [];
+    this.logger.debug(`Looking for article: ${articleId}`);
     const newsItemEntity = await this.newsRepository.findOne(articleId, {
       relations: ['source'],
     });
+    this.logger.debug(`Found article: ${articleId}`);
     if (!newsItemEntity) {
       throw new Error('Article not found');
     }
