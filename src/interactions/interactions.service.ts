@@ -75,7 +75,7 @@ export class InteractionsService {
         jobId: newsItem.id,
         timeout: 1000 * 10, // 10 seconds
         delay,
-        attempts: 3,
+        attempts: 7,
         backoff: { type: 'fixed', delay: 1000 * 60 * 15 },
       },
     );
@@ -202,15 +202,10 @@ export class InteractionsService {
   }
 
   async processTwitterInteractions(articleId: number) {
-    // eslint-disable-next-line prefer-const
-    let [interactions, newsItemEntity] = await Promise.all([
-      this.interactionsRepository.find({
-        where: { articleId },
-        order: { requestTime: 'ASC' },
-      }),
-      this.newsRepository.findOne(articleId, { relations: ['source'] }),
-    ]);
-
+    let interactions = [];
+    const newsItemEntity = await this.newsRepository.findOne(articleId, {
+      relations: ['source'],
+    });
     if (!newsItemEntity) {
       throw new Error('Article not found');
     }
@@ -230,9 +225,15 @@ export class InteractionsService {
           return interaction;
         },
       );
+    } else {
+      interactions = await this.interactionsRepository.find({
+        where: { articleId },
+        order: { requestTime: 'ASC' },
+      });
     }
 
     if (!interactions.length) {
+      this.logger.warn(`There are no interactions for articleId: ${articleId}`);
       return;
     }
 
