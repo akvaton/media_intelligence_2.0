@@ -359,10 +359,16 @@ export class InteractionsService {
     interactionIndex: number,
   ) {
     try {
+      this.logger.debug(
+        `Calling measureTwitterAudienceTime for article ${article.id}`,
+      );
       const articleInteractions = await this.interactionsRepository.find({
         where: { articleId: article.id },
         order: { requestTime: 'ASC' },
       });
+      this.logger.debug(
+        `Get measureTwitterAudienceTime for article ${article.id}`,
+      );
       const interaction = articleInteractions[interactionIndex];
       const startTime = dayjs(interaction.requestTime)
         .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
