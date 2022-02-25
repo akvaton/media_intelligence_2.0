@@ -359,33 +359,34 @@ export class InteractionsService {
     interactionIndex: number,
   ) {
     try {
-      this.logger.debug(
-        `Calling measureTwitterAudienceTime for article ${article.id}`,
-      );
-      const articleInteractions = await this.interactionsRepository.find({
-        where: { articleId: article.id },
-        order: { requestTime: 'ASC' },
-      });
-      this.logger.debug(
-        `Get measureTwitterAudienceTime for article ${article.id}`,
-      );
+      const articleInteractions = await this.interactionsRepository
+        .find({
+          where: { articleId: article.id },
+          order: { requestTime: 'ASC' },
+        })
+        .catch((e) => {
+          this.logger.error(`Error for articleInteractions: ${e}`);
+          throw e;
+        });
       const interaction = articleInteractions[interactionIndex];
       const startTime = dayjs(interaction.requestTime)
         .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
         .add(1, 'minute')
         .toISOString();
-      this.logger.debug(
-        `Calling inRangeInteractions for article ${article.id}`,
-      );
-      const inRangeInteractions = await this.interactionsRepository.find({
-        where: {
-          requestTime: Between(
-            startTime,
-            dayjs(interaction.requestTime).toISOString(),
-          ),
-        },
-        // relations: ['article', 'article.source'],
-      });
+      const inRangeInteractions = await this.interactionsRepository
+        .find({
+          where: {
+            requestTime: Between(
+              startTime,
+              dayjs(interaction.requestTime).toISOString(),
+            ),
+          },
+          // relations: ['article', 'article.source'],
+        })
+        .catch((e) => {
+          this.logger.error(`Error for inRangeInteractions: ${e}`);
+          throw e;
+        });
       this.logger.debug(
         `Retrieved inRangeInteractions for article ${article.id}`,
       );
