@@ -309,7 +309,7 @@ export class InteractionsService {
       { newsItem, repeatedTimes },
       {
         removeOnComplete: true,
-        removeOnFail: true,
+        // removeOnFail: true,
         jobId: newsItem.id,
         timeout: 1000 * 10,
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
@@ -328,7 +328,7 @@ export class InteractionsService {
       { newsItem, repeatedTimes },
       {
         removeOnComplete: true,
-        removeOnFail: true,
+        // removeOnFail: true,
         jobId: newsItem.id,
         timeout: 1000 * 10,
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,

@@ -46,7 +46,7 @@ export class FeedsService implements OnModuleInit {
     return this.feedsQueue.add(PARSE_JOB, feed, {
       repeat: { cron: CronExpression.EVERY_HOUR },
       removeOnComplete: true,
-      removeOnFail: true,
+      // removeOnFail: true,
       jobId: feed.id,
     });
   }
