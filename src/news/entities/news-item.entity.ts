@@ -16,7 +16,7 @@ export class Article extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   link: string;
 
   @Column()

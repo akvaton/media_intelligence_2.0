@@ -44,7 +44,7 @@ export class FeedsService implements OnModuleInit {
 
   enqueueFeedsParsing(feed: Feed) {
     return this.feedsQueue.add(PARSE_JOB, feed, {
-      repeat: { cron: CronExpression.EVERY_10_MINUTES },
+      repeat: { cron: CronExpression.EVERY_HOUR },
       removeOnComplete: true,
       removeOnFail: true,
       jobId: feed.id,
