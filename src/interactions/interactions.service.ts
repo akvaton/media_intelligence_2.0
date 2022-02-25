@@ -259,7 +259,12 @@ export class InteractionsService {
     );
 
     await Promise.all([
-      this.interactionsRepository.save(interactions),
+      this.interactionsRepository.save(interactions).catch((e) => {
+        this.logger.error(
+          `Saving Interactions failed for articleId ${articleId}!`,
+        );
+        throw e;
+      }),
       this.newsRepository.save(newsItemEntity),
     ]);
 
