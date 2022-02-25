@@ -268,6 +268,8 @@ export class InteractionsService {
       this.newsRepository.save(newsItemEntity),
     ]);
 
+    this.logger.debug(`Interactions saved for articleId: ${articleId}`);
+
     if (newsItemEntity.source.origin === FeedOrigin.USA) {
       await this.enqueueTwitterAudienceTimeMeasuring({
         newsItem: newsItemEntity,
