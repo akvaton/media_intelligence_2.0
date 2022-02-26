@@ -21,7 +21,7 @@ import { AudienceTimeProcessor } from './consumers/audience-time.processor';
     BullModule.registerQueue({
       name: AUDIENCE_TIME_QUEUE,
       limiter: {
-        max: 30,
+        max: 60,
         duration: 1000 * 60, // 1 minute
       },
     }),

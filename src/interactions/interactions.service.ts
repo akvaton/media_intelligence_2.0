@@ -311,7 +311,7 @@ export class InteractionsService {
         removeOnComplete: true,
         // removeOnFail: true,
         jobId: newsItem.id,
-        timeout: 1000 * 10,
+        timeout: 1000 * 60 * 2, // 2 minutes
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
         attempts: 5,
         backoff: { type: 'fixed', delay: 1000 * 60 },
