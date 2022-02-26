@@ -73,7 +73,7 @@ export class InteractionsService {
       {
         removeOnComplete: true,
         jobId: newsItem.id,
-        timeout: 1000 * 10, // 10 seconds
+        timeout: 1000 * 60 * 2, // 10 seconds
         delay,
         attempts: 7,
         backoff: { type: 'fixed', delay: 1000 * 60 * 15 },
@@ -314,7 +314,7 @@ export class InteractionsService {
         timeout: 1000 * 60 * 2, // 2 minutes
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
         attempts: 5,
-        backoff: { type: 'fixed', delay: 1000 * 60 },
+        backoff: { type: 'fixed', delay: 1000 * 60 * 5 },
       },
     );
   }
