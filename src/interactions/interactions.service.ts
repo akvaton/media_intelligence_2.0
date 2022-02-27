@@ -387,9 +387,6 @@ export class InteractionsService {
           this.logger.error(`Error for inRangeInteractions: ${e}`);
           throw e;
         });
-      this.logger.debug(
-        `Retrieved inRangeInteractions for article ${article.id}`,
-      );
 
       interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
         return acc + curr.twitterInteractions;
