@@ -44,7 +44,9 @@ export class FeedsProcessor {
           responseEncoding: 'binary',
         });
         const feedData = (await lastValueFrom(feedResponse$)).data;
-        const parsedFeedData = await this.parser.parseString(feedData);
+        const parsedFeedData = await this.parser.parseString(
+          feedData.replace(/&/g, '&amp;'),
+        );
 
         this.logger.debug(`Parsed Feed Data For ${job.data.name}`);
         await this.newsService.createIfNotExist(
