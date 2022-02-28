@@ -6,6 +6,7 @@ import {
   FindManyOptions,
   LessThan,
   MoreThan,
+  MoreThanOrEqual,
   Repository,
 } from 'typeorm';
 import { Queue } from 'bull';
@@ -34,7 +35,7 @@ import {
 } from 'src/config/constants';
 import { GraphData, SocialMediaKey } from './dto/interaction.dto';
 import { FeedOrigin } from '../feeds/entities/feed.entity';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class InteractionsService implements OnModuleInit {
@@ -211,11 +212,9 @@ export class InteractionsService implements OnModuleInit {
 
   async processTwitterInteractions(articleId: number) {
     let interactions = [];
-    this.logger.debug(`Looking for article: ${articleId}`);
     const newsItemEntity = await this.newsRepository.findOne(articleId, {
       relations: ['source'],
     });
-    this.logger.debug(`Found article: ${articleId}`);
     if (!newsItemEntity) {
       throw new Error('Article not found');
     }
@@ -414,8 +413,9 @@ export class InteractionsService implements OnModuleInit {
       where: {
         requestTime: MoreThan(fiftyHoursBeforeNow),
         audienceTime: -1,
+        twitterInteractions: MoreThanOrEqual(0),
       },
-      take: 10,
+      take: 50,
     });
     this.logger.debug(
       '!!!ensureLostInteractions count: ',
@@ -460,6 +460,7 @@ export class InteractionsService implements OnModuleInit {
   }
 
   onModuleInit() {
+    this.logger.debug('Added ENSURE_LOST_INTERACTIONS');
     this.audienceTimeQueue.add(
       ENSURE_LOST_INTERACTIONS,
       {},
