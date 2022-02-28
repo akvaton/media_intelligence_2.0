@@ -461,11 +461,15 @@ export class InteractionsService implements OnModuleInit {
           repeatableJobs,
         )}`,
       );
+      repeatableJobs.forEach((job) =>
+        this.audienceTimeQueue.removeRepeatableByKey(job.key),
+      );
+
+      this.audienceTimeQueue.add(
+        ENSURE_LOST_INTERACTIONS,
+        {},
+        { repeat: { cron: '0 */3 * * * *' } },
+      );
     });
-    this.audienceTimeQueue.add(
-      ENSURE_LOST_INTERACTIONS,
-      {},
-      { repeat: { cron: '0 */2 * * * *' } },
-    );
   }
 }
