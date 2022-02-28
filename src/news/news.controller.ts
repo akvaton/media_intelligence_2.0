@@ -42,4 +42,9 @@ export class NewsController {
   async recalculateOnDemand(@Param() params) {
     return this.interactionsService.recalculateOnDemand(params.id);
   }
+
+  @Post('/twitter-interactions/:id')
+  async getTwitterInteractions(@Param() params) {
+    return this.interactionsService.twitterInteractionsOnDemand(params.id);
+  }
 }

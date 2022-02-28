@@ -463,7 +463,7 @@ export class InteractionsService implements OnModuleInit {
       this.audienceTimeQueue.add(
         ENSURE_LOST_INTERACTIONS,
         {},
-        { repeat: { cron: '0 */3 * * * *' }, attempts: 5 },
+        { repeat: { cron: '0 */5 * * * *' }, attempts: 5 },
       );
     });
   }
@@ -478,5 +478,9 @@ export class InteractionsService implements OnModuleInit {
         return this.calculateAudienceTime(interaction);
       }),
     );
+  }
+
+  async twitterInteractionsOnDemand(articleId) {
+    return this.processTwitterInteractions(articleId);
   }
 }

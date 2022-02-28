@@ -77,11 +77,18 @@ const GraphData = ({ record }) => {
   }, []);
 
   const recalculate = () => {
-    axios.post(`/articles/recalculate/${record.id}`).then(fetchAndShowData);
+    return axios
+      .post(`/articles/recalculate/${record.id}`)
+      .then(fetchAndShowData);
+  };
+
+  const getTwitterInteractions = () => {
+    axios.post(`/articles/twitter-interactions/${record.id}`).then(recalculate);
   };
 
   return (
     <div>
+      <button onClick={getTwitterInteractions}>Get Twitter Interactions</button>
       <button onClick={recalculate}>Count Audience Time</button>
       <div id="containerTwitter" />
       <div id="selectedFragmentTwitter" />
