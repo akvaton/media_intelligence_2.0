@@ -427,7 +427,10 @@ export class InteractionsService implements OnModuleInit {
   async ensureTwitterInteractions() {
     //  todo: Get articles where there are
     //   pubDate is between 48 hours and 1 week from now AND twitterInteractions is -1
-    const firstHourToCheck = dayjs().subtract(7, 'days').toISOString();
+    const firstHourToCheck = dayjs()
+      .subtract(7, 'days')
+      .add(1, 'minutes')
+      .toISOString();
     const lastHourToCheck = dayjs().subtract(2, 'days').toISOString();
     const lostArticles = await this.newsRepository.find({
       where: {
