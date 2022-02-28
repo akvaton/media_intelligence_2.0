@@ -472,7 +472,9 @@ export class InteractionsService implements OnModuleInit {
     const interactions = await this.interactionsRepository.find({
       articleId: articleId,
     });
-    this.logger.debug(`CALCULATE ON DEMAND ${JSON.stringify(interactions)}`);
+    this.logger.debug(
+      `CALCULATE ON DEMAND ${articleId}, Interactions: ${interactions.length}`,
+    );
     return Promise.all(
       interactions.map(async (interaction) => {
         return this.calculateAudienceTime(interaction);
