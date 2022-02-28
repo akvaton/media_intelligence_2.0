@@ -423,6 +423,31 @@ export class InteractionsService implements OnModuleInit {
 
     return await this.interactionsRepository.save(interaction);
   }
+
+  async ensureTwitterInteractions() {
+    //  todo: Get articles where there are
+    //   pubDate is between 48 hours and 1 week from now AND twitterInteractions is -1
+    const firstHourToCheck = dayjs().subtract(7, 'days').toISOString();
+    const lastHourToCheck = dayjs().subtract(2, 'days').toISOString();
+    const lostArticles = await this.newsRepository.find({
+      where: {
+        pubDate: Between(firstHourToCheck, lastHourToCheck),
+        twitterInteractions: -1,
+      },
+      take: 10,
+    });
+    this.logger.debug(
+      'ensureTwitterInteractions',
+      JSON.stringify(lostArticles),
+    );
+
+    return Promise.all(
+      lostArticles.map((article) => {
+        this.processTwitterInteractions(article.id);
+      }),
+    );
+  }
+
   async ensureLostInteractions() {
     const firstHourToCheck = dayjs().subtract(72, 'hours').toDate();
     const lostInteractions = await this.interactionsRepository.find({
@@ -463,7 +488,7 @@ export class InteractionsService implements OnModuleInit {
       this.audienceTimeQueue.add(
         ENSURE_LOST_INTERACTIONS,
         {},
-        { repeat: { cron: '0 */5 * * * *' }, attempts: 5 },
+        { repeat: { cron: '0 */4 * * * *' }, attempts: 5 },
       );
     });
   }
