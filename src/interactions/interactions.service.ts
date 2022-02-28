@@ -454,7 +454,14 @@ export class InteractionsService implements OnModuleInit {
     );
   }
 
-  onModuleInit() {
+  async onModuleInit() {
+    this.audienceTimeQueue.getRepeatableJobs().then((repeatableJobs) => {
+      this.logger.debug(
+        `REPEATABLE JOBS in audienceTimeQueue: ${JSON.stringify(
+          repeatableJobs,
+        )}`,
+      );
+    });
     this.audienceTimeQueue.add(
       ENSURE_LOST_INTERACTIONS,
       {},
