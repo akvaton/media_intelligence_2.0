@@ -1,15 +1,9 @@
-import {
-  OnQueueActive,
-  OnQueueCompleted,
-  Process,
-  Processor,
-} from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
+import { OnQueueCompleted, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { InteractionsService } from '../interactions.service';
 import {
   AUDIENCE_TIME_QUEUE,
-  FACEBOOK_QUEUE,
+  ENSURE_LOST_INTERACTIONS,
   TWITTER_AUDIENCE_TIME_JOB,
   UKRAINIAN_AUDIENCE_TIME_JOB,
 } from 'src/config/constants';
@@ -57,5 +51,10 @@ export class AudienceTimeProcessor {
       newsItem,
       repeatedTimes,
     );
+  }
+
+  @Process(ENSURE_LOST_INTERACTIONS)
+  async ensureInteractionsProcessor() {
+    return this.interactionsService.ensureLostInteractions();
   }
 }

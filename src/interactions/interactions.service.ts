@@ -1,7 +1,13 @@
 import axios from 'axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Between, FindManyOptions, Repository } from 'typeorm';
+import {
+  Between,
+  FindManyOptions,
+  LessThan,
+  MoreThan,
+  Repository,
+} from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,6 +26,7 @@ import { lastValueFrom } from 'rxjs';
 import {
   AUDIENCE_TIME_QUEUE,
   BIGMIR_MEDIA_SELECTOR,
+  ENSURE_LOST_INTERACTIONS,
   FACEBOOK_QUEUE,
   TWITTER_AUDIENCE_TIME_JOB,
   TWITTER_QUEUE,
@@ -27,9 +34,10 @@ import {
 } from 'src/config/constants';
 import { GraphData, SocialMediaKey } from './dto/interaction.dto';
 import { FeedOrigin } from '../feeds/entities/feed.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
-export class InteractionsService {
+export class InteractionsService implements OnModuleInit {
   private logger = new Logger(InteractionsService.name);
   private twitterClient = new TwitterApi(process.env.TWITTER_TOKEN).readOnly;
   private cache = setupCache({ maxAge: 60 * 1000 });
@@ -397,5 +405,65 @@ export class InteractionsService {
       this.logger.error(e);
       throw e;
     }
+  }
+
+  async ensureLostInteractions() {
+    this.logger.debug('ensureLostInteractions called!');
+    const fiftyHoursBeforeNow = dayjs().subtract(50, 'hours').toISOString();
+    const lostInteractions = await this.interactionsRepository.find({
+      where: {
+        requestTime: MoreThan(fiftyHoursBeforeNow),
+        audienceTime: -1,
+      },
+      take: 10,
+    });
+    this.logger.debug(
+      '!!!ensureLostInteractions count: ',
+      lostInteractions.length,
+    );
+
+    this.logger.debug('Lost interactions', JSON.stringify(lostInteractions));
+
+    return Promise.all(
+      lostInteractions.map(async (interaction) => {
+        if (interaction.audienceTime !== -1) {
+          this.logger.error(
+            `Wrong interaction taken: ${JSON.stringify(interaction)}`,
+          );
+          return;
+        }
+        const startTime = dayjs(interaction.requestTime)
+          .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
+          .add(1, 'minute')
+          .toISOString();
+        const inRangeInteractions = await this.interactionsRepository
+          .find({
+            where: {
+              requestTime: Between(
+                startTime,
+                dayjs(interaction.requestTime).toISOString(),
+              ),
+            },
+          })
+          .catch((e) => {
+            this.logger.error(`Error for ensureLostInteraction: ${e}`);
+            throw e;
+          });
+
+        interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
+          return acc + curr.twitterInteractions;
+        }, 0);
+
+        return await this.interactionsRepository.save(interaction);
+      }),
+    );
+  }
+
+  onModuleInit() {
+    this.audienceTimeQueue.add(
+      ENSURE_LOST_INTERACTIONS,
+      {},
+      { repeat: { cron: CronExpression.EVERY_5_MINUTES } },
+    );
   }
 }

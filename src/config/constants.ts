@@ -9,3 +9,4 @@ export const CHECK_FEEDS = 'check-feeds';
 export const NEWS_QUEUE = 'news';
 export const BIGMIR_MEDIA_SELECTOR =
   '#container_main > div.page2.g-clearfix > div.doublecol.normal.fr > table:nth-child(3) > tbody > tr:nth-child(18) > td:nth-child(3)';
+export const ENSURE_LOST_INTERACTIONS = 'ensure-lost-interactions';
