@@ -415,8 +415,7 @@ export class InteractionsService implements OnModuleInit {
         audienceTime: -1,
         twitterInteractions: MoreThanOrEqual(0),
       },
-      take: 20,
-      // order: { requestTime: 'DESC' },
+      take: 30,
     });
     this.logger.debug(`LostInteractions count: ${lostInteractions.length}`);
     this.logger.debug(JSON.stringify(lostInteractions));

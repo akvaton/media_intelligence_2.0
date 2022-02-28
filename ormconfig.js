@@ -24,5 +24,5 @@ module.exports = {
     encrypt: true,
   },
   requestTimeout: 120000,
-  logging: true,
+  // logging: true,
 };
