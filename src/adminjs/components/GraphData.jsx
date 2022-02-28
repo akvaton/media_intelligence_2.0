@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import axios from 'axios';
 
 const GraphData = ({ record }) => {
-  useEffect(() => {
+  const fetchAndShowData = () => {
     axios.get(`/articles/${record.id}`).then(({ data }) => {
       const { articleData, graphData } = data;
       const {
@@ -71,12 +71,13 @@ const GraphData = ({ record }) => {
         });
       });
     });
+  };
+  useEffect(() => {
+    fetchAndShowData();
   }, []);
 
   const recalculate = () => {
-    axios.post(`/articles/recalculate/${record.id}`).then(() => {
-      window.location.reload();
-    });
+    axios.post(`/articles/recalculate/${record.id}`).then(fetchAndShowData);
   };
 
   return (
