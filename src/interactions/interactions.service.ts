@@ -424,15 +424,14 @@ export class InteractionsService implements OnModuleInit {
     return await this.interactionsRepository.save(interaction);
   }
   async ensureLostInteractions() {
-    const firstHourToCheck = dayjs().subtract(50, 'hours').toDate();
-    this.logger.debug(`FIRST HOUR: ${firstHourToCheck}`);
+    const firstHourToCheck = dayjs().subtract(72, 'hours').toDate();
     const lostInteractions = await this.interactionsRepository.find({
       where: {
-        requestTime: MoreThan(dayjs().subtract(50, 'hours').toDate()),
+        requestTime: MoreThan(firstHourToCheck),
         audienceTime: -1,
         twitterInteractions: MoreThanOrEqual(0),
       },
-      take: 25,
+      take: 20,
     });
     this.logger.debug(`LostInteractions count: ${lostInteractions.length}`);
     this.logger.debug(JSON.stringify(lostInteractions));
