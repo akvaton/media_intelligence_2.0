@@ -429,7 +429,7 @@ export class InteractionsService implements OnModuleInit {
       where: {
         requestTime: MoreThan(firstHourToCheck),
         audienceTime: -1,
-        twitterInteractions: MoreThanOrEqual(0),
+        // twitterInteractions: MoreThanOrEqual(0),
       },
       take: 20,
     });
@@ -472,7 +472,7 @@ export class InteractionsService implements OnModuleInit {
     const interactions = await this.interactionsRepository.find({
       articleId: articleId,
     });
-    this.logger.debug('CALCULATE ON DEMAND', articleId, interactions);
+    this.logger.debug(`CALCULATE ON DEMAND ${JSON.stringify(interactions)}`);
     return Promise.all(
       interactions.map(async (interaction) => {
         return this.calculateAudienceTime(interaction);
