@@ -458,7 +458,7 @@ export class InteractionsService implements OnModuleInit {
     this.audienceTimeQueue.add(
       ENSURE_LOST_INTERACTIONS,
       {},
-      { repeat: { cron: CronExpression.EVERY_5_MINUTES } },
+      { repeat: { cron: '0 */2 * * * *' } },
     );
   }
 }
