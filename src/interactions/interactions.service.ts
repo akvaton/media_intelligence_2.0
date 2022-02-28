@@ -4,7 +4,6 @@ import { InjectQueue } from '@nestjs/bull';
 import {
   Between,
   FindManyOptions,
-  LessThan,
   MoreThan,
   MoreThanOrEqual,
   Repository,
@@ -406,6 +405,24 @@ export class InteractionsService implements OnModuleInit {
     }
   }
 
+  async calculateAudienceTime(interaction: Interaction) {
+    const startTime = dayjs(interaction.requestTime)
+      .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
+      .add(1, 'minute')
+      .toISOString();
+    const inRangeInteractions = await this.interactionsRepository.find({
+      requestTime: Between(
+        startTime,
+        dayjs(interaction.requestTime).toISOString(),
+      ),
+    });
+
+    interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
+      return acc + curr.twitterInteractions;
+    }, 0);
+
+    return await this.interactionsRepository.save(interaction);
+  }
   async ensureLostInteractions() {
     const firstHourToCheck = dayjs().subtract(50, 'hours').toDate();
     this.logger.debug(`FIRST HOUR: ${firstHourToCheck}`);
@@ -428,29 +445,7 @@ export class InteractionsService implements OnModuleInit {
           );
           return;
         }
-        const startTime = dayjs(interaction.requestTime)
-          .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
-          .add(1, 'minute')
-          .toISOString();
-        const inRangeInteractions = await this.interactionsRepository
-          .find({
-            where: {
-              requestTime: Between(
-                startTime,
-                dayjs(interaction.requestTime).toISOString(),
-              ),
-            },
-          })
-          .catch((e) => {
-            this.logger.error(`Error for ensureLostInteraction: ${e}`);
-            throw e;
-          });
-
-        interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
-          return acc + curr.twitterInteractions;
-        }, 0);
-
-        return await this.interactionsRepository.save(interaction);
+        return this.calculateAudienceTime(interaction);
       }),
     );
   }
@@ -472,5 +467,17 @@ export class InteractionsService implements OnModuleInit {
         { repeat: { cron: '0 */3 * * * *' }, attempts: 5 },
       );
     });
+  }
+
+  async recalculateOnDemand(articleId) {
+    const interactions = await this.interactionsRepository.find({
+      articleId: articleId,
+    });
+    this.logger.debug('CALCULATE ON DEMAND', articleId, interactions);
+    return Promise.all(
+      interactions.map(async (interaction) => {
+        return this.calculateAudienceTime(interaction);
+      }),
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Feed } from '../feeds/entities/feed.entity';
 import { Repository } from 'typeorm';
@@ -36,5 +36,10 @@ export class NewsController {
       this.interactionsService.getGraphData(normalizedData) || [];
 
     return JSON.stringify({ articleData, graphData });
+  }
+
+  @Post('/recalculate/:id')
+  async recalculateOnDemand(@Param() params) {
+    return this.interactionsService.recalculateOnDemand(params.id);
   }
 }

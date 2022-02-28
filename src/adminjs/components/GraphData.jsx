@@ -73,8 +73,15 @@ const GraphData = ({ record }) => {
     });
   }, []);
 
+  const recalculate = () => {
+    axios.post(`/articles/recalculate/${record.id}`).then(() => {
+      window.location.reload();
+    });
+  };
+
   return (
     <div>
+      <button onClick={recalculate}>Count Audience Time</button>
       <div id="containerTwitter" />
       <div id="selectedFragmentTwitter" />
       <div id="containerFb" />
