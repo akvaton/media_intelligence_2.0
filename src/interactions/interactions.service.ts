@@ -407,7 +407,6 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureLostInteractions() {
-    this.logger.debug('ensureLostInteractions called!');
     const fiftyHoursBeforeNow = dayjs().subtract(50, 'hours').toISOString();
     const lostInteractions = await this.interactionsRepository.find({
       where: {
@@ -417,11 +416,7 @@ export class InteractionsService implements OnModuleInit {
       },
       take: 20,
     });
-    this.logger.debug(
-      '!!!ensureLostInteractions count: ',
-      lostInteractions.length,
-    );
-
+    this.logger.debug(`LostInteractions count: ${lostInteractions.length}`);
     this.logger.debug('Lost interactions', JSON.stringify(lostInteractions));
 
     return Promise.all(
@@ -460,7 +455,6 @@ export class InteractionsService implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.logger.debug('Added ENSURE_LOST_INTERACTIONS');
     this.audienceTimeQueue.add(
       ENSURE_LOST_INTERACTIONS,
       {},
