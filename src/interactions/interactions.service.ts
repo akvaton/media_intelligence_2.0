@@ -446,7 +446,7 @@ export class InteractionsService implements OnModuleInit {
 
     return Promise.all(
       lostArticles.map((article) => {
-        this.processTwitterInteractions(article.id);
+        return this.processTwitterInteractions(article.id);
       }),
     );
   }
@@ -491,7 +491,7 @@ export class InteractionsService implements OnModuleInit {
       this.audienceTimeQueue.add(
         ENSURE_LOST_INTERACTIONS,
         {},
-        { repeat: { cron: '0 */4 * * * *' }, attempts: 5 },
+        { repeat: { cron: CronExpression.EVERY_10_MINUTES }, attempts: 5 },
       );
     });
   }
