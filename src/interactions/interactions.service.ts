@@ -407,9 +407,8 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureLostInteractions() {
-    const firstHourToCheck = dayjs()
-      .subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
-      .toISOString();
+    const firstHourToCheck = dayjs().subtract(48, 'hours').toISOString();
+    this.logger.debug(`FIRST HOUR: ${firstHourToCheck}`);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
         requestTime: MoreThan(firstHourToCheck),
