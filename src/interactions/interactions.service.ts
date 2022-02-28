@@ -407,17 +407,20 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureLostInteractions() {
-    const fiftyHoursBeforeNow = dayjs().subtract(50, 'hours').toISOString();
+    const firstHourToCheck = dayjs()
+      .subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
+      .toISOString();
     const lostInteractions = await this.interactionsRepository.find({
       where: {
-        requestTime: MoreThan(fiftyHoursBeforeNow),
+        requestTime: MoreThan(firstHourToCheck),
         audienceTime: -1,
         twitterInteractions: MoreThanOrEqual(0),
       },
       take: 20,
+      order: { requestTime: 'DESC' },
     });
     this.logger.debug(`LostInteractions count: ${lostInteractions.length}`);
-    this.logger.debug('Lost interactions', JSON.stringify(lostInteractions));
+    this.logger.debug(JSON.stringify(lostInteractions));
 
     return Promise.all(
       lostInteractions.map(async (interaction) => {
