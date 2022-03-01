@@ -40,7 +40,7 @@ export class NewsController {
 
   @Post('/recalculate/:id')
   async recalculateOnDemand(@Param() params) {
-    return this.interactionsService.recalculateOnDemand(params.id);
+    return this.interactionsService.recalculateAudienceTimeOnDemand(params.id);
   }
 
   @Post('/twitter-interactions/:id')

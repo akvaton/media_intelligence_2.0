@@ -396,15 +396,13 @@ export class InteractionsService implements OnModuleInit {
     }
   }
 
-  async calculateAudienceTime(interaction: Interaction) {
+  async calculateAudienceTime(interaction: Interaction, article: Article) {
     const startTime = dayjs(interaction.requestTime).toISOString();
     const inRangeInteractions = await this.interactionsRepository.find({
-      requestTime: Between(
-        startTime,
-        dayjs(interaction.article.pubDate).toISOString(),
-      ),
+      requestTime: Between(dayjs(article.pubDate).toISOString(), startTime),
     });
 
+    // console.log('IN RANGE INTERACTIONS', inRangeInteractions);
     interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
       return curr.twitterInteractions === -1
         ? acc
@@ -415,38 +413,38 @@ export class InteractionsService implements OnModuleInit {
     return await this.interactionsRepository.save(interaction);
   }
 
-  async ensureTwitterInteractions() {
-    const firstHourToCheck = dayjs()
-      .subtract(7, 'days')
-      .add(1, 'minutes')
-      .toISOString();
-    const lastHourToCheck = dayjs().subtract(2, 'days').toISOString();
-    const lostArticles = await this.newsRepository.find({
-      where: {
-        pubDate: Between(firstHourToCheck, lastHourToCheck),
-        twitterInteractions: -1,
-      },
-      take: 40,
-    });
-    this.logger.debug(
-      'Ensure Twitter Interactions >>>',
-      JSON.stringify(
-        lostArticles.map(({ id, pubDate, link }) => ({
-          id,
-          pubDate,
-          link,
-        })),
-      ),
-    );
-
-    return Promise.all(
-      lostArticles.map((article) => {
-        return this.processTwitterInteractions(article.id);
-      }),
-    );
+  async ensureAccumulatedArticleInteraction() {
+    // const firstHourToCheck = dayjs()
+    //   .subtract(7, 'days')
+    //   .add(1, 'minutes')
+    //   .toISOString();
+    // const lastHourToCheck = dayjs().subtract(2, 'days').toISOString();
+    // const lostArticles = await this.newsRepository.find({
+    //   where: {
+    //     pubDate: Between(firstHourToCheck, lastHourToCheck),
+    //     twitterInteractions: -1,
+    //   },
+    //   take: 40,
+    // });
+    // this.logger.debug(
+    //   'Ensure Twitter Interactions >>>',
+    //   JSON.stringify(
+    //     lostArticles.map(({ id, pubDate, link }) => ({
+    //       id,
+    //       pubDate,
+    //       link,
+    //     })),
+    //   ),
+    // );
+    //
+    // return Promise.all(
+    //   lostArticles.map((article) => {
+    //     return this.processTwitterInteractions(article.id);
+    //   }),
+    // );
   }
 
-  async ensureLostInteractions() {
+  async ensureAccumulatedInteractions() {
     const firstHourToCheck = dayjs()
       .subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
       .toDate();
@@ -469,7 +467,7 @@ export class InteractionsService implements OnModuleInit {
 
     return Promise.all(
       lostInteractions.map(async (interaction) => {
-        return this.calculateAudienceTime(interaction);
+        return this.calculateAudienceTime(interaction, interaction.article);
       }),
     );
   }
@@ -485,7 +483,7 @@ export class InteractionsService implements OnModuleInit {
           ENSURE_ACCUMULATED_INTERACTIONS,
           {},
           {
-            repeat: { cron: '0 */4 * * * *' },
+            repeat: { cron: '0 */2 * * * *' },
             attempts: 5,
             priority: 1,
           },
@@ -494,17 +492,19 @@ export class InteractionsService implements OnModuleInit {
     });
   }
 
-  async recalculateOnDemand(articleId) {
-    const interactions = await this.interactionsRepository.find({
-      articleId: articleId,
+  async recalculateAudienceTimeOnDemand(articleId: number) {
+    const article = await this.newsRepository.findOne(articleId, {
+      relations: ['interactions'],
     });
     this.logger.debug(
-      `CALCULATE ON DEMAND ${articleId}, Interactions: ${interactions.length}`,
+      `CALCULATE ON DEMAND ${articleId}, Interactions: ${article.interactions.length}`,
     );
+    this.logger.debug(JSON.stringify(article));
+
     return Promise.all(
-      interactions.map(async (interaction) => {
-        return this.calculateAudienceTime(interaction);
-      }),
+      article.interactions.map((interaction) =>
+        this.calculateAudienceTime(interaction, article),
+      ),
     );
   }
 

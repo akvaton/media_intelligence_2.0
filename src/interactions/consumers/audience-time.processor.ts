@@ -55,6 +55,6 @@ export class AudienceTimeProcessor {
 
   @Process(ENSURE_ACCUMULATED_INTERACTIONS)
   async ensureInteractionsProcessor() {
-    return this.interactionsService.ensureLostInteractions();
+    return this.interactionsService.ensureAccumulatedInteractions();
   }
 }
