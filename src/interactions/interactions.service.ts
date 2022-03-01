@@ -409,7 +409,6 @@ export class InteractionsService implements OnModuleInit {
       'In Range Interactions Count: ',
       inRangeInteractions.length,
     );
-    // console.log('IN RANGE INTERACTIONS', inRangeInteractions);
     interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
       return curr.twitterInteractions === -1
         ? acc
@@ -421,6 +420,10 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedArticleInteraction() {
+    const startTime = dayjs().subtract(INTERACTIONS_PROCESSES_FINISH * 2, 'ms');
+    const articles = this.newsRepository.find({
+      where: { pubDate: LessThan(startTime) },
+    });
     // const firstHourToCheck = dayjs()
     //   .subtract(7, 'days')
     //   .add(1, 'minutes')
@@ -462,7 +465,7 @@ export class InteractionsService implements OnModuleInit {
         isAccumulated: false,
       },
       relations: ['article'],
-      take: 25,
+      take: 10,
       order: { requestTime: 'DESC' },
     });
     this.logger.debug(
