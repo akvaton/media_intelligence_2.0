@@ -409,13 +409,6 @@ export class InteractionsService implements OnModuleInit {
     interaction.audienceTime = sum || 0;
     interaction.isAccumulated = true;
 
-    this.logger.debug(
-      `calculateAudienceTime ${JSON.stringify({
-        id: interaction.id,
-        audienceTime: sum,
-        articleId: article.id,
-      })}`,
-    );
     await this.interactionsRepository.save(interaction);
     return { id: interaction.id, audienceTime: interaction.audienceTime };
   }
@@ -466,7 +459,7 @@ export class InteractionsService implements OnModuleInit {
         isAccumulated: false,
       },
       relations: ['article'],
-      take: 50,
+      take: 70,
       order: { requestTime: 'DESC' },
     });
     this.logger.debug(
