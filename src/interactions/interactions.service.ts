@@ -1,13 +1,7 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import {
-  Between,
-  FindManyOptions,
-  MoreThan,
-  MoreThanOrEqual,
-  Repository,
-} from 'typeorm';
+import { Between, FindManyOptions, MoreThan, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
