@@ -409,7 +409,13 @@ export class InteractionsService implements OnModuleInit {
     interaction.audienceTime = sum || 0;
     interaction.isAccumulated = true;
 
-    await this.interactionsRepository.save(interaction);
+    const savedInteraction = await this.interactionsRepository.save(
+      interaction,
+    );
+
+    this.logger.debug(
+      `Saved Interaction ${savedInteraction.id} ${savedInteraction.audienceTime}`,
+    );
     return { id: interaction.id, audienceTime: interaction.audienceTime };
   }
 
@@ -459,7 +465,7 @@ export class InteractionsService implements OnModuleInit {
         isAccumulated: false,
       },
       relations: ['article'],
-      take: 70,
+      take: 50,
       order: { requestTime: 'DESC' },
     });
     this.logger.debug(
