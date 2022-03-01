@@ -397,26 +397,26 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async calculateAudienceTime(interaction: Interaction, article: Article) {
-    const startTime = dayjs(interaction.requestTime).toISOString();
-    const inRangeInteractions = await this.interactionsRepository.find({
-      where: {
-        requestTime: Between(dayjs(article.pubDate).toISOString(), startTime),
-      },
-      select: ['id', 'twitterInteractions'],
-    });
+    const { sum } = await this.interactionsRepository
+      .createQueryBuilder('interaction')
+      .select('SUM(interaction.twitterInteractions)', 'sum')
+      .where('interaction."Time of request" BETWEEN :start AND :end', {
+        start: dayjs(article.pubDate).toISOString(),
+        end: dayjs(interaction.requestTime).toISOString(),
+      })
+      .getRawOne();
 
-    this.logger.debug(
-      'In Range Interactions Count: ',
-      inRangeInteractions.length,
-    );
-    interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
-      return curr.twitterInteractions === -1
-        ? acc
-        : acc + curr.twitterInteractions;
-    }, 0);
+    interaction.audienceTime = sum || 0;
     interaction.isAccumulated = true;
 
-    return await this.interactionsRepository.save(interaction);
+    this.logger.debug(
+      `calculateAudienceTime ${JSON.stringify({
+        id: interaction.id,
+        audienceTime: sum,
+      })}`,
+    );
+    await this.interactionsRepository.save(interaction);
+    return { id: interaction.id, audienceTime: interaction.audienceTime };
   }
 
   async ensureAccumulatedArticleInteraction() {
@@ -465,7 +465,7 @@ export class InteractionsService implements OnModuleInit {
         isAccumulated: false,
       },
       relations: ['article'],
-      take: 10,
+      take: 50,
       order: { requestTime: 'DESC' },
     });
     this.logger.debug(
