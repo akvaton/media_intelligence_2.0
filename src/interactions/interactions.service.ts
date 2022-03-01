@@ -413,6 +413,7 @@ export class InteractionsService implements OnModuleInit {
       `calculateAudienceTime ${JSON.stringify({
         id: interaction.id,
         audienceTime: sum,
+        articleId: article.id,
       })}`,
     );
     await this.interactionsRepository.save(interaction);
@@ -471,7 +472,10 @@ export class InteractionsService implements OnModuleInit {
     this.logger.debug(
       'NON-ACCUMULATED INTERACTIONS:',
       JSON.stringify(
-        lostInteractions.map(({ article, ...loggableData }) => loggableData),
+        lostInteractions.map(({ id, requestTime, ...rest }) => ({
+          id,
+          requestTime,
+        })),
       ),
     );
 
