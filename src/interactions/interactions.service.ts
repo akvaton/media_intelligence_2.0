@@ -492,10 +492,15 @@ export class InteractionsService implements OnModuleInit {
         this.audienceTimeQueue.removeRepeatableByKey(job.key),
       );
 
+      this.logger.debug(`Add ENSURE_LOST_INTERACTIONS`);
       this.audienceTimeQueue.add(
         ENSURE_LOST_INTERACTIONS,
         {},
-        { repeat: { cron: '0 */2 * * * *' }, attempts: 5 },
+        {
+          repeat: { cron: CronExpression.EVERY_MINUTE },
+          attempts: 5,
+          priority: 1,
+        },
       );
     });
   }
