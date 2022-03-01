@@ -44,6 +44,10 @@ export class FeedsProcessor {
           responseEncoding: 'binary',
         });
         const feedData = (await lastValueFrom(feedResponse$)).data;
+        if (url === 'https://www.buzzfeed.com/politics.xml') {
+          this.logger.debug('FEED DATA', feedData);
+        }
+
         const parsedFeedData = await this.parser.parseString(
           feedData.replace(/&/g, '&amp;'),
         );
