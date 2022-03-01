@@ -20,10 +20,6 @@ import { AudienceTimeProcessor } from './consumers/audience-time.processor';
     TypeOrmModule.forFeature([Interaction, Article]),
     BullModule.registerQueue({
       name: AUDIENCE_TIME_QUEUE,
-      limiter: {
-        max: 160,
-        duration: 1000 * 60, // 1 minute
-      },
     }),
     BullModule.registerQueue({
       name: FACEBOOK_QUEUE,
