@@ -1,13 +1,7 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import {
-  Between,
-  FindManyOptions,
-  LessThan,
-  MoreThanOrEqual,
-  Repository,
-} from 'typeorm';
+import { Between, FindManyOptions, LessThan, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -26,7 +20,7 @@ import { lastValueFrom } from 'rxjs';
 import {
   AUDIENCE_TIME_QUEUE,
   BIGMIR_MEDIA_SELECTOR,
-  ENSURE_LOST_INTERACTIONS,
+  ENSURE_ACCUMULATED_INTERACTIONS,
   FACEBOOK_QUEUE,
   TWITTER_AUDIENCE_TIME_JOB,
   TWITTER_QUEUE,
@@ -403,19 +397,20 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async calculateAudienceTime(interaction: Interaction) {
-    const startTime = dayjs(interaction.requestTime)
-      .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
-      .toISOString();
+    const startTime = dayjs(interaction.requestTime).toISOString();
     const inRangeInteractions = await this.interactionsRepository.find({
       requestTime: Between(
         startTime,
-        dayjs(interaction.requestTime).toISOString(),
+        dayjs(interaction.article.pubDate).toISOString(),
       ),
     });
 
     interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
-      return acc + curr.twitterInteractions;
+      return curr.twitterInteractions === -1
+        ? acc
+        : acc + curr.twitterInteractions;
     }, 0);
+    interaction.isAccumulated = true;
 
     return await this.interactionsRepository.save(interaction);
   }
@@ -452,7 +447,9 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureLostInteractions() {
-    const firstHourToCheck = dayjs().subtract(48, 'hours').toDate();
+    const firstHourToCheck = dayjs()
+      .subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
+      .toDate();
     this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
@@ -460,10 +457,15 @@ export class InteractionsService implements OnModuleInit {
         isAccumulated: false,
       },
       relations: ['article'],
-      take: 30,
+      take: 50,
       order: { requestTime: 'DESC' },
     });
-    this.logger.debug('LOST INTERACTIONS:', JSON.stringify(lostInteractions));
+    this.logger.debug(
+      'NON-ACCUMULATED INTERACTIONS:',
+      JSON.stringify(
+        lostInteractions.map(({ article, ...loggableData }) => loggableData),
+      ),
+    );
 
     return Promise.all(
       lostInteractions.map(async (interaction) => {
@@ -474,19 +476,21 @@ export class InteractionsService implements OnModuleInit {
 
   async onModuleInit() {
     this.audienceTimeQueue.getRepeatableJobs().then((repeatableJobs) => {
-      repeatableJobs.forEach((job) =>
-        this.audienceTimeQueue.removeRepeatableByKey(job.key),
-      );
-
-      this.audienceTimeQueue.add(
-        ENSURE_LOST_INTERACTIONS,
-        {},
-        {
-          repeat: { cron: CronExpression.EVERY_5_MINUTES },
-          attempts: 5,
-          priority: 1,
-        },
-      );
+      Promise.all(
+        repeatableJobs.map((job) =>
+          this.audienceTimeQueue.removeRepeatableByKey(job.key),
+        ),
+      ).then(() => {
+        this.audienceTimeQueue.add(
+          ENSURE_ACCUMULATED_INTERACTIONS,
+          {},
+          {
+            repeat: { cron: '0 */4 * * * *' },
+            attempts: 5,
+            priority: 1,
+          },
+        );
+      });
     });
   }
 

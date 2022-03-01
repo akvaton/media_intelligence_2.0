@@ -3,7 +3,7 @@ import { Job } from 'bull';
 import { InteractionsService } from '../interactions.service';
 import {
   AUDIENCE_TIME_QUEUE,
-  ENSURE_LOST_INTERACTIONS,
+  ENSURE_ACCUMULATED_INTERACTIONS,
   TWITTER_AUDIENCE_TIME_JOB,
   UKRAINIAN_AUDIENCE_TIME_JOB,
 } from 'src/config/constants';
@@ -53,7 +53,7 @@ export class AudienceTimeProcessor {
     );
   }
 
-  @Process(ENSURE_LOST_INTERACTIONS)
+  @Process(ENSURE_ACCUMULATED_INTERACTIONS)
   async ensureInteractionsProcessor() {
     return this.interactionsService.ensureLostInteractions();
   }
