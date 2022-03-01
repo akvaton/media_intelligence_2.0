@@ -425,8 +425,6 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureTwitterInteractions() {
-    //  todo: Get articles where there are
-    //   pubDate is between 48 hours and 1 week from now AND twitterInteractions is -1
     const firstHourToCheck = dayjs()
       .subtract(7, 'days')
       .add(1, 'minutes')
@@ -437,7 +435,7 @@ export class InteractionsService implements OnModuleInit {
         pubDate: Between(firstHourToCheck, lastHourToCheck),
         twitterInteractions: -1,
       },
-      take: 30,
+      take: 40,
     });
     this.logger.debug(
       'ensureTwitterInteractions',
@@ -491,7 +489,7 @@ export class InteractionsService implements OnModuleInit {
       this.audienceTimeQueue.add(
         ENSURE_LOST_INTERACTIONS,
         {},
-        { repeat: { cron: CronExpression.EVERY_5_MINUTES }, attempts: 5 },
+        { repeat: { cron: '0 */1 * * * *' }, attempts: 5 },
       );
     });
   }

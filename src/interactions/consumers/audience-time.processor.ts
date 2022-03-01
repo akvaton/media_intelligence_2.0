@@ -55,9 +55,6 @@ export class AudienceTimeProcessor {
 
   @Process(ENSURE_LOST_INTERACTIONS)
   async ensureInteractionsProcessor() {
-    return Promise.all([
-      this.interactionsService.ensureTwitterInteractions(),
-      this.interactionsService.ensureLostInteractions(),
-    ]);
+    return this.interactionsService.ensureTwitterInteractions();
   }
 }
