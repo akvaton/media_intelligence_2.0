@@ -399,7 +399,10 @@ export class InteractionsService implements OnModuleInit {
   async calculateAudienceTime(interaction: Interaction, article: Article) {
     const startTime = dayjs(interaction.requestTime).toISOString();
     const inRangeInteractions = await this.interactionsRepository.find({
-      requestTime: Between(dayjs(article.pubDate).toISOString(), startTime),
+      where: {
+        requestTime: Between(dayjs(article.pubDate).toISOString(), startTime),
+      },
+      select: ['id', 'twitterInteractions'],
     });
 
     this.logger.debug(
