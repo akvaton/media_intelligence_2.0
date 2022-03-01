@@ -4,6 +4,7 @@ import { InjectQueue } from '@nestjs/bull';
 import {
   Between,
   FindManyOptions,
+  LessThan,
   MoreThan,
   MoreThanOrEqual,
   Repository,
@@ -457,16 +458,18 @@ export class InteractionsService implements OnModuleInit {
 
   async ensureLostInteractions() {
     const firstHourToCheck = dayjs().subtract(72, 'hours').toDate();
+    this.logger.debug('FIRST TO CHECK', firstHourToCheck);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
         requestTime: MoreThan(firstHourToCheck),
         audienceTime: -1,
-        twitterInteractions: MoreThanOrEqual(0),
+        // twitterInteractions: MoreThanOrEqual(0),
       },
       take: 40,
     });
     this.logger.debug(`LostInteractions count: ${lostInteractions.length}`);
     this.logger.debug(
+      'MORE THAN:',
       JSON.stringify(
         lostInteractions.map(
           ({ id, articleId, twitterInteractions, requestTime }) => ({
@@ -478,18 +481,37 @@ export class InteractionsService implements OnModuleInit {
         ),
       ),
     );
-
-    return Promise.all(
-      lostInteractions.map(async (interaction) => {
-        if (interaction.audienceTime !== -1) {
-          this.logger.error(
-            `Wrong interaction taken: ${JSON.stringify(interaction)}`,
-          );
-          return;
-        }
-        return this.calculateAudienceTime(interaction);
-      }),
+    const lessThan = await this.interactionsRepository.find({
+      where: {
+        requestTime: LessThan(firstHourToCheck),
+        audienceTime: -1,
+        // twitterInteractions: MoreThanOrEqual(0),
+      },
+      take: 40,
+    });
+    this.logger.debug(
+      'LESS THAN:',
+      JSON.stringify(
+        lessThan.map(({ id, articleId, twitterInteractions, requestTime }) => ({
+          id,
+          articleId,
+          twitterInteractions,
+          requestTime,
+        })),
+      ),
     );
+
+    // return Promise.all(
+    //   lostInteractions.map(async (interaction) => {
+    //     if (interaction.audienceTime !== -1) {
+    //       this.logger.error(
+    //         `Wrong interaction taken: ${JSON.stringify(interaction)}`,
+    //       );
+    //       return;
+    //     }
+    //     return this.calculateAudienceTime(interaction);
+    //   }),
+    // );
   }
 
   async onModuleInit() {
