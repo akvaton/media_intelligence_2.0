@@ -5,7 +5,6 @@ import {
   Between,
   FindManyOptions,
   LessThan,
-  MoreThan,
   MoreThanOrEqual,
   Repository,
 } from 'typeorm';
@@ -458,14 +457,14 @@ export class InteractionsService implements OnModuleInit {
 
   async ensureLostInteractions() {
     const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
-    this.logger.debug('FIRST TO CHECK', firstHourToCheck);
+    this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
         requestTime: LessThan(firstHourToCheck),
         audienceTime: -1,
         twitterInteractions: MoreThanOrEqual(0),
       },
-      take: 50,
+      take: 30,
       order: { requestTime: 'DESC' },
     });
     this.logger.debug('LOST INTERACTIONS:', JSON.stringify(lostInteractions));
@@ -493,7 +492,7 @@ export class InteractionsService implements OnModuleInit {
         ENSURE_LOST_INTERACTIONS,
         {},
         {
-          repeat: { cron: '0 */3 * * * *' },
+          repeat: { cron: CronExpression.EVERY_5_MINUTES },
           attempts: 5,
           priority: 1,
         },
