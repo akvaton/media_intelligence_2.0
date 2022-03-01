@@ -437,7 +437,7 @@ export class InteractionsService implements OnModuleInit {
         pubDate: Between(firstHourToCheck, lastHourToCheck),
         twitterInteractions: -1,
       },
-      take: 10,
+      take: 30,
     });
     this.logger.debug(
       'ensureTwitterInteractions',
@@ -488,11 +488,11 @@ export class InteractionsService implements OnModuleInit {
         this.audienceTimeQueue.removeRepeatableByKey(job.key),
       );
 
-      // this.audienceTimeQueue.add(
-      //   ENSURE_LOST_INTERACTIONS,
-      //   {},
-      //   { repeat: { cron: CronExpression.EVERY_10_MINUTES }, attempts: 5 },
-      // );
+      this.audienceTimeQueue.add(
+        ENSURE_LOST_INTERACTIONS,
+        {},
+        { repeat: { cron: CronExpression.EVERY_5_MINUTES }, attempts: 5 },
+      );
     });
   }
 

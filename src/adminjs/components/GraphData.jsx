@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 const GraphData = ({ record }) => {
+  const [loading, setLoading] = useState(false);
   const fetchAndShowData = () => {
+    setLoading(true);
     axios.get(`/articles/${record.id}`).then(({ data }) => {
       const { articleData, graphData } = data;
       const {
@@ -28,6 +30,7 @@ const GraphData = ({ record }) => {
         twitterEndIndex,
       );
 
+      setLoading(false);
       [
         {
           title: 'Full Graph Twitter',
@@ -90,6 +93,7 @@ const GraphData = ({ record }) => {
     <div>
       <button onClick={getTwitterInteractions}>Get Twitter Interactions</button>
       <button onClick={recalculate}>Count Audience Time</button>
+      {loading && 'Loading...'}
       <div id="containerTwitter" />
       <div id="selectedFragmentTwitter" />
       <div id="containerFb" />
