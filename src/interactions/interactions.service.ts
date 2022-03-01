@@ -438,8 +438,14 @@ export class InteractionsService implements OnModuleInit {
       take: 40,
     });
     this.logger.debug(
-      'ensureTwitterInteractions',
-      JSON.stringify(lostArticles),
+      'Ensure Twitter Interactions >>>',
+      JSON.stringify(
+        lostArticles.map(({ id, pubDate, link }) => ({
+          id,
+          pubDate,
+          link,
+        })),
+      ),
     );
 
     return Promise.all(
@@ -489,7 +495,7 @@ export class InteractionsService implements OnModuleInit {
       this.audienceTimeQueue.add(
         ENSURE_LOST_INTERACTIONS,
         {},
-        { repeat: { cron: '0 */1 * * * *' }, attempts: 5 },
+        { repeat: { cron: '0 */2 * * * *' }, attempts: 5 },
       );
     });
   }
