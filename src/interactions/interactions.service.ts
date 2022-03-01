@@ -465,29 +465,10 @@ export class InteractionsService implements OnModuleInit {
         audienceTime: -1,
         twitterInteractions: MoreThanOrEqual(0),
       },
-      take: 40,
+      take: 50,
       order: { requestTime: 'DESC' },
     });
-    this.logger.debug(
-      'LOST INTERACTIONS:',
-      JSON.stringify(
-        lostInteractions.map(
-          ({
-            id,
-            articleId,
-            twitterInteractions,
-            requestTime,
-            audienceTime,
-          }) => ({
-            id,
-            articleId,
-            twitterInteractions,
-            requestTime,
-            audienceTime,
-          }),
-        ),
-      ),
-    );
+    this.logger.debug('LOST INTERACTIONS:', JSON.stringify(lostInteractions));
 
     return Promise.all(
       lostInteractions.map(async (interaction) => {
@@ -504,21 +485,15 @@ export class InteractionsService implements OnModuleInit {
 
   async onModuleInit() {
     this.audienceTimeQueue.getRepeatableJobs().then((repeatableJobs) => {
-      this.logger.debug(
-        `REPEATABLE JOBS in audienceTimeQueue: ${JSON.stringify(
-          repeatableJobs,
-        )}`,
-      );
       repeatableJobs.forEach((job) =>
         this.audienceTimeQueue.removeRepeatableByKey(job.key),
       );
 
-      this.logger.debug(`Add ENSURE_LOST_INTERACTIONS`);
       this.audienceTimeQueue.add(
         ENSURE_LOST_INTERACTIONS,
         {},
         {
-          repeat: { cron: CronExpression.EVERY_MINUTE },
+          repeat: { cron: '0 */3 * * * *' },
           attempts: 5,
           priority: 1,
         },
