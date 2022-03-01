@@ -381,6 +381,10 @@ export class InteractionsService implements OnModuleInit {
       interaction.audienceTime = sum || 0;
       interaction.isAccumulated = true;
 
+      this.logger.debug(
+        `measureTwitterAudienceTime ${interaction.id} ${interaction.audienceTime}`,
+      );
+
       return await this.interactionsRepository.save(interaction);
     } catch (e) {
       this.logger.error(e);
@@ -455,7 +459,7 @@ export class InteractionsService implements OnModuleInit {
         isAccumulated: false,
       },
       relations: ['article'],
-      take: 50,
+      take: 60,
       order: { requestTime: 'DESC' },
     });
     this.logger.debug(
