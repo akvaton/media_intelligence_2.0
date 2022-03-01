@@ -503,16 +503,16 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async recalculateAudienceTimeOnDemand(articleId: number) {
-    const article = await this.newsRepository.findOne(articleId, {
-      relations: ['interactions'],
-    });
+    const [article, interactions] = await Promise.all([
+      this.newsRepository.findOne(articleId),
+      this.interactionsRepository.find({ articleId }),
+    ]);
     this.logger.debug(
-      `CALCULATE ON DEMAND ${articleId}, Interactions: ${article.interactions.length}`,
+      `CALCULATE ON DEMAND ${articleId}, Interactions: ${interactions.length}`,
     );
-    this.logger.debug(JSON.stringify(article));
 
     return Promise.all(
-      article.interactions.map((interaction) =>
+      interactions.map((interaction) =>
         this.calculateAudienceTime(interaction, article),
       ),
     );
