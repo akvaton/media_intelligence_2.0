@@ -369,24 +369,16 @@ export class InteractionsService implements OnModuleInit {
           throw e;
         });
       const interaction = articleInteractions[interactionIndex];
-      const startTime = dayjs(interaction.requestTime).toISOString();
-      const inRangeInteractions = await this.interactionsRepository
-        .find({
-          where: {
-            requestTime: Between(
-              dayjs(article.pubDate).toISOString(),
-              startTime,
-            ),
-          },
+      const { sum } = await this.interactionsRepository
+        .createQueryBuilder('interaction')
+        .select('SUM(interaction.twitterInteractions)', 'sum')
+        .where('interaction."Time of request" BETWEEN :start AND :end', {
+          start: dayjs(article.pubDate).toISOString(),
+          end: dayjs(interaction.requestTime).toISOString(),
         })
-        .catch((e) => {
-          this.logger.error(`Error for inRangeInteractions: ${e}`);
-          throw e;
-        });
+        .getRawOne();
 
-      interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
-        return acc + curr.twitterInteractions;
-      }, 0);
+      interaction.audienceTime = sum || 0;
       interaction.isAccumulated = true;
 
       return await this.interactionsRepository.save(interaction);
