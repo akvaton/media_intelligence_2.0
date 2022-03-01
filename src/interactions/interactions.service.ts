@@ -1,7 +1,13 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Between, FindManyOptions, MoreThan, Repository } from 'typeorm';
+import {
+  Between,
+  FindManyOptions,
+  MoreThan,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -455,12 +461,23 @@ export class InteractionsService implements OnModuleInit {
       where: {
         requestTime: MoreThan(firstHourToCheck),
         audienceTime: -1,
-        // twitterInteractions: MoreThanOrEqual(0),
+        twitterInteractions: MoreThanOrEqual(0),
       },
-      take: 20,
+      take: 40,
     });
     this.logger.debug(`LostInteractions count: ${lostInteractions.length}`);
-    this.logger.debug(JSON.stringify(lostInteractions));
+    this.logger.debug(
+      JSON.stringify(
+        lostInteractions.map(
+          ({ id, articleId, twitterInteractions, requestTime }) => ({
+            id,
+            articleId,
+            twitterInteractions,
+            requestTime,
+          }),
+        ),
+      ),
+    );
 
     return Promise.all(
       lostInteractions.map(async (interaction) => {
