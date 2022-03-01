@@ -377,17 +377,15 @@ export class InteractionsService implements OnModuleInit {
       const interaction = articleInteractions[interactionIndex];
       const startTime = dayjs(interaction.requestTime)
         .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
-        .add(1, 'minute')
         .toISOString();
       const inRangeInteractions = await this.interactionsRepository
         .find({
           where: {
             requestTime: Between(
+              dayjs(article.pubDate).toISOString(),
               startTime,
-              dayjs(interaction.requestTime).toISOString(),
             ),
           },
-          // relations: ['article', 'article.source'],
         })
         .catch((e) => {
           this.logger.error(`Error for inRangeInteractions: ${e}`);
@@ -397,6 +395,7 @@ export class InteractionsService implements OnModuleInit {
       interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
         return acc + curr.twitterInteractions;
       }, 0);
+      interaction.isAccumulated = true;
 
       return await this.interactionsRepository.save(interaction);
     } catch (e) {
@@ -408,7 +407,6 @@ export class InteractionsService implements OnModuleInit {
   async calculateAudienceTime(interaction: Interaction) {
     const startTime = dayjs(interaction.requestTime)
       .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
-      .add(1, 'minute')
       .toISOString();
     const inRangeInteractions = await this.interactionsRepository.find({
       requestTime: Between(
@@ -456,14 +454,16 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureLostInteractions() {
-    const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
+    const firstHourToCheck = dayjs().subtract(48, 'hours').toDate();
     this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
         requestTime: LessThan(firstHourToCheck),
-        audienceTime: -1,
-        twitterInteractions: MoreThanOrEqual(0),
+        isAccumulated: false,
+        // audienceTime: -1,
+        // twitterInteractions: MoreThanOrEqual(0),
       },
+      relations: ['article'],
       take: 30,
       order: { requestTime: 'DESC' },
     });
@@ -471,12 +471,6 @@ export class InteractionsService implements OnModuleInit {
 
     return Promise.all(
       lostInteractions.map(async (interaction) => {
-        if (interaction.audienceTime !== -1) {
-          this.logger.error(
-            `Wrong interaction taken: ${JSON.stringify(interaction)}`,
-          );
-          return;
-        }
         return this.calculateAudienceTime(interaction);
       }),
     );

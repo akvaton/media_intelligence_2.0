@@ -34,4 +34,7 @@ export class Interaction extends BaseEntity {
 
   @Column({ name: 'articleId', type: 'int' })
   articleId: number;
+
+  @Column({ default: false })
+  isAccumulated: boolean;
 }
