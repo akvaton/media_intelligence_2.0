@@ -462,7 +462,7 @@ export class InteractionsService implements OnModuleInit {
         isAccumulated: false,
       },
       relations: ['article'],
-      take: 50,
+      take: 25,
       order: { requestTime: 'DESC' },
     });
     this.logger.debug(
