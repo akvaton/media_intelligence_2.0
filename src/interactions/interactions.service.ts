@@ -402,6 +402,10 @@ export class InteractionsService implements OnModuleInit {
       requestTime: Between(dayjs(article.pubDate).toISOString(), startTime),
     });
 
+    this.logger.debug(
+      'In Range Interactions Count: ',
+      inRangeInteractions.length,
+    );
     // console.log('IN RANGE INTERACTIONS', inRangeInteractions);
     interaction.audienceTime = inRangeInteractions.reduce((acc, curr) => {
       return curr.twitterInteractions === -1
