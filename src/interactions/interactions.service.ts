@@ -488,11 +488,11 @@ export class InteractionsService implements OnModuleInit {
         this.audienceTimeQueue.removeRepeatableByKey(job.key),
       );
 
-      this.audienceTimeQueue.add(
-        ENSURE_LOST_INTERACTIONS,
-        {},
-        { repeat: { cron: CronExpression.EVERY_10_MINUTES }, attempts: 5 },
-      );
+      // this.audienceTimeQueue.add(
+      //   ENSURE_LOST_INTERACTIONS,
+      //   {},
+      //   { repeat: { cron: CronExpression.EVERY_10_MINUTES }, attempts: 5 },
+      // );
     });
   }
 

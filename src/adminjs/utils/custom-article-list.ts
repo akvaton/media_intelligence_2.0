@@ -49,7 +49,7 @@ export const ListAction = {
     if (minFacebookInteractions || maxFacebookInteractions) {
       filtersData.facebookInteractions = true;
     }
-    if (minTwitterInteractions || minFacebookInteractions) {
+    if (minTwitterInteractions || maxTwitterInteractions) {
       filtersData.twitterInteractions = true;
     }
     const filter = await new Filter(filtersData, resource).populate();
