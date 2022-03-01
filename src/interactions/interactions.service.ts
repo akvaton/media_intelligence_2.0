@@ -375,9 +375,7 @@ export class InteractionsService implements OnModuleInit {
           throw e;
         });
       const interaction = articleInteractions[interactionIndex];
-      const startTime = dayjs(interaction.requestTime)
-        .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
-        .toISOString();
+      const startTime = dayjs(interaction.requestTime).toISOString();
       const inRangeInteractions = await this.interactionsRepository
         .find({
           where: {
@@ -460,8 +458,6 @@ export class InteractionsService implements OnModuleInit {
       where: {
         requestTime: LessThan(firstHourToCheck),
         isAccumulated: false,
-        // audienceTime: -1,
-        // twitterInteractions: MoreThanOrEqual(0),
       },
       relations: ['article'],
       take: 30,
@@ -482,15 +478,15 @@ export class InteractionsService implements OnModuleInit {
         this.audienceTimeQueue.removeRepeatableByKey(job.key),
       );
 
-      // this.audienceTimeQueue.add(
-      //   ENSURE_LOST_INTERACTIONS,
-      //   {},
-      //   {
-      //     repeat: { cron: CronExpression.EVERY_5_MINUTES },
-      //     attempts: 5,
-      //     priority: 1,
-      //   },
-      // );
+      this.audienceTimeQueue.add(
+        ENSURE_LOST_INTERACTIONS,
+        {},
+        {
+          repeat: { cron: CronExpression.EVERY_5_MINUTES },
+          attempts: 5,
+          priority: 1,
+        },
+      );
     });
   }
 
