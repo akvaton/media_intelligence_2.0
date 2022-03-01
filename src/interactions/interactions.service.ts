@@ -457,7 +457,7 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureLostInteractions() {
-    const firstHourToCheck = dayjs().subtract(48, 'hours').toDate();
+    const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
     this.logger.debug('FIRST TO CHECK', firstHourToCheck);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
@@ -489,17 +489,17 @@ export class InteractionsService implements OnModuleInit {
       ),
     );
 
-    // return Promise.all(
-    //   lessThan.map(async (interaction) => {
-    //     if (interaction.audienceTime !== -1) {
-    //       this.logger.error(
-    //         `Wrong interaction taken: ${JSON.stringify(interaction)}`,
-    //       );
-    //       return;
-    //     }
-    //     return this.calculateAudienceTime(interaction);
-    //   }),
-    // );
+    return Promise.all(
+      lostInteractions.map(async (interaction) => {
+        if (interaction.audienceTime !== -1) {
+          this.logger.error(
+            `Wrong interaction taken: ${JSON.stringify(interaction)}`,
+          );
+          return;
+        }
+        return this.calculateAudienceTime(interaction);
+      }),
+    );
   }
 
   async onModuleInit() {
