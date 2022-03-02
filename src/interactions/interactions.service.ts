@@ -420,38 +420,10 @@ export class InteractionsService implements OnModuleInit {
     const articles = this.newsRepository.find({
       where: { pubDate: LessThan(startTime) },
     });
-    // const firstHourToCheck = dayjs()
-    //   .subtract(7, 'days')
-    //   .add(1, 'minutes')
-    //   .toISOString();
-    // const lastHourToCheck = dayjs().subtract(2, 'days').toISOString();
-    // const lostArticles = await this.newsRepository.find({
-    //   where: {
-    //     pubDate: Between(firstHourToCheck, lastHourToCheck),
-    //     twitterInteractions: -1,
-    //   },
-    //   take: 40,
-    // });
-    // this.logger.debug(
-    //   'Ensure Twitter Interactions >>>',
-    //   JSON.stringify(
-    //     lostArticles.map(({ id, pubDate, link }) => ({
-    //       id,
-    //       pubDate,
-    //       link,
-    //     })),
-    //   ),
-    // );
-    //
-    // return Promise.all(
-    //   lostArticles.map((article) => {
-    //     return this.processTwitterInteractions(article.id);
-    //   }),
-    // );
   }
 
   async ensureAccumulatedInteractions() {
-    const firstHourToCheck = dayjs().subtract(56, 'hours').toDate();
+    const firstHourToCheck = dayjs().subtract(72, 'hours').toDate();
     this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
