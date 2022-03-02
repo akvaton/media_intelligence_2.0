@@ -423,7 +423,7 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedInteractions() {
-    const firstHourToCheck = dayjs().subtract(72, 'hours').toDate();
+    const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
     this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
     const lostInteractions = await this.interactionsRepository.find({
       where: {
