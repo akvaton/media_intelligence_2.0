@@ -7,6 +7,7 @@ import { FeedsService } from './feeds.service';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { CHECK_FEEDS, PARSE_JOB } from '../config/constants';
+import axios from 'axios';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Parser = require('rss-parser');
 
@@ -48,6 +49,15 @@ export class FeedsProcessor {
           this.logger.debug(
             'FEED DATA',
             feedData.replace(/(\r\n|\n|\r)/gm, ''),
+          );
+
+          const axiosResponse = await axios.get(
+            'https://www.buzzfeed.com/politics.xml',
+          );
+
+          this.logger.debug(
+            'AXIOS RESPONSE',
+            axiosResponse.data.replace(/(\r\n|\n|\r)/gm, ''),
           );
         }
 
