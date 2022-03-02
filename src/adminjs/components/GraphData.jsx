@@ -82,10 +82,17 @@ const GraphData = ({ record }) => {
 
   const recalculate = () => {
     setCalculating(true);
-    return axios.post(`/articles/recalculate/${record.id}`).then(() => {
-      setCalculating(false);
-      fetchAndShowData();
-    });
+    return axios
+      .post(`/articles/recalculate/${record.id}`)
+      .then(() => {
+        setCalculating(false);
+        fetchAndShowData();
+      })
+      .catch((error) => {
+        setCalculating(false);
+        console.error(error);
+        alert('Calculation failed due to high load; Please try again later');
+      });
   };
 
   const getTwitterInteractions = () => {
