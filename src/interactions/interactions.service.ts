@@ -490,7 +490,7 @@ export class InteractionsService implements OnModuleInit {
           ENSURE_ACCUMULATED_INTERACTIONS,
           {},
           {
-            repeat: { cron: CronExpression.EVERY_5_MINUTES },
+            repeat: { cron: CronExpression.EVERY_10_MINUTES },
             attempts: 5,
             priority: 1,
           },
