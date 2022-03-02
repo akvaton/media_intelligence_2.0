@@ -502,7 +502,7 @@ export class InteractionsService implements OnModuleInit {
   async recalculateAudienceTimeOnDemand(articleId: number) {
     const [article, interactions] = await Promise.all([
       this.newsRepository.findOne(articleId),
-      this.interactionsRepository.find({ articleId }),
+      this.interactionsRepository.find({ articleId, isAccumulated: false }),
     ]);
     this.logger.debug(
       `CALCULATE ON DEMAND ${articleId}, Interactions: ${interactions.length}`,

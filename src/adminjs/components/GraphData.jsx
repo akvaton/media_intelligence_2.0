@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const GraphData = ({ record }) => {
   const [loading, setLoading] = useState(false);
+  const [calculating, setCalculating] = useState(false);
   const fetchAndShowData = () => {
     setLoading(true);
     axios.get(`/articles/${record.id}`).then(({ data }) => {
@@ -80,9 +81,11 @@ const GraphData = ({ record }) => {
   }, []);
 
   const recalculate = () => {
-    return axios
-      .post(`/articles/recalculate/${record.id}`)
-      .then(fetchAndShowData);
+    setCalculating(true);
+    return axios.post(`/articles/recalculate/${record.id}`).then(() => {
+      setCalculating(false);
+      fetchAndShowData();
+    });
   };
 
   const getTwitterInteractions = () => {
@@ -92,8 +95,11 @@ const GraphData = ({ record }) => {
   return (
     <div>
       <button onClick={getTwitterInteractions}>Get Twitter Interactions</button>
-      <button onClick={recalculate}>Count Audience Time</button>
+      <button onClick={recalculate} disabled={calculating}>
+        Count Audience Time
+      </button>
       {loading && 'Loading...'}
+      {calculating && <p>Calculating...</p>}
       <div id="containerTwitter" />
       <div id="selectedFragmentTwitter" />
       <div id="containerFb" />
