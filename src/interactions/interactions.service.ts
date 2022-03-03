@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Between, FindManyOptions, LessThan, Repository } from 'typeorm';
+import { FindManyOptions, LessThan, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -110,18 +110,19 @@ export class InteractionsService implements OnModuleInit {
   ) {
     const startIndex = newsItem[`${key}StartIndex`];
     const endIndex = newsItem[`${key}EndIndex`];
-    const result = graphData.slice(startIndex, endIndex).reduce(
+    const analyzedFragment = graphData.slice(startIndex, endIndex);
+    const result = analyzedFragment.reduce(
       (accumulator, currentItem) => {
         accumulator.xSum += currentItem.audienceTime;
         accumulator.ySum += currentItem[key as string];
         accumulator.xySum +=
           currentItem[key as string] * currentItem.audienceTime;
         accumulator.x2Sum += Math.pow(currentItem.audienceTime, 2);
-        accumulator.xAverage = accumulator.xSum / graphData.length;
+        accumulator.xAverage = accumulator.xSum / analyzedFragment.length;
 
         return accumulator;
       },
-      { xSum: 0, ySum: 0, xySum: 0, x2Sum: 0, xAverage: 0 },
+      { xSum: 0, ySum: 0, xySum: 0, x2Sum: 0, xAverage: 0, yAverage: 0 },
     );
     const { xSum, ySum, xySum, x2Sum, xAverage } = result;
     const coefficient =
@@ -369,18 +370,48 @@ export class InteractionsService implements OnModuleInit {
           throw e;
         });
       const interaction = articleInteractions[interactionIndex];
-      const { sum } = await this.interactionsRepository
-        .createQueryBuilder('interaction')
-        .select('SUM(interaction.twitterInteractions)', 'sum')
-        .where('interaction."Time of request" BETWEEN :start AND :end', {
-          start: dayjs(article.pubDate).toISOString(),
-          end: dayjs(interaction.requestTime).toISOString(),
-        })
-        .getRawOne();
+      const previousInteractions = articleInteractions.slice(
+        0,
+        interactionIndex,
+      );
+      if (!interactionIndex) {
+        interaction.audienceTime = 0;
+      } else if (
+        previousInteractions.length > 1 &&
+        previousInteractions.every((interaction) => interaction.isAccumulated)
+      ) {
+        const previousInteraction = articleInteractions[interactionIndex - 1];
+        const { sum } = await this.interactionsRepository
+          .createQueryBuilder('interaction')
+          .select('SUM(interaction.twitterInteractions)', 'sum')
+          .where('interaction."Time of request" BETWEEN :start AND :end', {
+            start: dayjs(previousInteraction.requestTime).toISOString(),
+            end: dayjs(interaction.requestTime).toISOString(),
+          })
+          .getRawOne();
 
-      interaction.audienceTime = sum || 0;
+        this.logger.debug(
+          JSON.stringify({ previousInteraction, sum, article }),
+        );
+
+        interaction.audienceTime = sum + previousInteraction.audienceTime;
+      } else {
+        const { sum } = await this.interactionsRepository
+          .createQueryBuilder('interaction')
+          .select('SUM(interaction.twitterInteractions)', 'sum')
+          .where('interaction."Time of request" BETWEEN :start AND :end', {
+            start: dayjs(article.pubDate).toISOString(),
+            end: dayjs(interaction.requestTime).toISOString(),
+          })
+          .getRawOne();
+
+        interaction.audienceTime = sum;
+      }
+
       interaction.isAccumulated = true;
-
+      this.logger.debug(
+        `measureTwitterAudienceTime ${JSON.stringify(interaction)}`,
+      );
       return await this.interactionsRepository.save(interaction);
     } catch (e) {
       this.logger.error(e);
