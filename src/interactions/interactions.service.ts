@@ -390,10 +390,6 @@ export class InteractionsService implements OnModuleInit {
           })
           .getRawOne();
 
-        this.logger.debug(
-          JSON.stringify({ previousInteraction, sum, article }),
-        );
-
         interaction.audienceTime = sum + previousInteraction.audienceTime;
       } else {
         const { sum } = await this.interactionsRepository
@@ -409,9 +405,6 @@ export class InteractionsService implements OnModuleInit {
       }
 
       interaction.isAccumulated = true;
-      this.logger.debug(
-        `measureTwitterAudienceTime ${JSON.stringify(interaction)}`,
-      );
       return await this.interactionsRepository.save(interaction);
     } catch (e) {
       this.logger.error(e);
