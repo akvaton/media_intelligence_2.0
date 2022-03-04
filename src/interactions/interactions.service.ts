@@ -457,6 +457,12 @@ export class InteractionsService implements OnModuleInit {
       .getRawMany();
 
     this.logger.debug('Ensure Articles: ', JSON.stringify(articles));
+
+    return Promise.all(
+      articles.map((article) =>
+        this.recalculateAudienceTimeOnDemand(article.id),
+      ),
+    );
     // const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
     // this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
     // const lostInteractions = await this.interactionsRepository.find({
@@ -520,6 +526,7 @@ export class InteractionsService implements OnModuleInit {
         if (!interaction.isAccumulated) {
           accumulator += interaction.audienceTime;
           interaction.audienceTime = accumulator;
+          interaction.isAccumulated = true;
 
           return this.interactionsRepository.save(interaction);
         } else {
