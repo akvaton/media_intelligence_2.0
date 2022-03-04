@@ -443,32 +443,46 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedInteractions() {
-    const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
-    this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
-    const lostInteractions = await this.interactionsRepository.find({
-      where: {
-        requestTime: LessThan(firstHourToCheck),
-        isAccumulated: false,
-      },
-      relations: ['article'],
-      take: 60,
-      order: { requestTime: 'DESC' },
-    });
-    this.logger.debug(
-      'NON-ACCUMULATED INTERACTIONS:',
-      JSON.stringify(
-        lostInteractions.map(({ id, requestTime, ...rest }) => ({
-          id,
-          requestTime,
-        })),
-      ),
-    );
+    const articles = await this.newsRepository
+      .createQueryBuilder('articles')
+      .select('*')
+      .where(
+        "EXISTS (SELECT * FROM interactions WHERE articleId = articles.id AND isAccumulated = 'False')",
+      )
+      .andWhere('articles.pubDate < :start', {
+        start: dayjs().subtract(96, 'hours').toISOString(),
+      })
+      .take(10)
+      .orderBy({ ['articles.pubDate']: 'ASC' })
+      .getRawMany();
 
-    return Promise.all(
-      lostInteractions.map(async (interaction) => {
-        return this.calculateAudienceTime(interaction, interaction.article);
-      }),
-    );
+    this.logger.debug('Ensure Articles: ', JSON.stringify(articles));
+    // const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
+    // this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
+    // const lostInteractions = await this.interactionsRepository.find({
+    //   where: {
+    //     requestTime: LessThan(firstHourToCheck),
+    //     isAccumulated: false,
+    //   },
+    //   relations: ['article'],
+    //   take: 60,
+    //   order: { requestTime: 'DESC' },
+    // });
+    // this.logger.debug(
+    //   'NON-ACCUMULATED INTERACTIONS:',
+    //   JSON.stringify(
+    //     lostInteractions.map(({ id, requestTime, ...rest }) => ({
+    //       id,
+    //       requestTime,
+    //     })),
+    //   ),
+    // );
+    //
+    // return Promise.all(
+    //   lostInteractions.map(async (interaction) => {
+    //     return this.calculateAudienceTime(interaction, interaction.article);
+    //   }),
+    // );
   }
 
   async onModuleInit() {
@@ -482,7 +496,7 @@ export class InteractionsService implements OnModuleInit {
           ENSURE_ACCUMULATED_INTERACTIONS,
           {},
           {
-            repeat: { cron: CronExpression.EVERY_10_MINUTES },
+            repeat: { cron: CronExpression.EVERY_5_MINUTES },
             attempts: 5,
             priority: 1,
           },
