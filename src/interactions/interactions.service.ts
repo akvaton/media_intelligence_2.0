@@ -492,18 +492,27 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async recalculateAudienceTimeOnDemand(articleId: number) {
-    const [article, interactions] = await Promise.all([
-      this.newsRepository.findOne(articleId),
-      this.interactionsRepository.find({ articleId, isAccumulated: false }),
-    ]);
+    const interactions = await this.interactionsRepository.find({
+      where: { articleId },
+      order: { requestTime: 'ASC' },
+    });
     this.logger.debug(
       `CALCULATE ON DEMAND ${articleId}, Interactions: ${interactions.length}`,
     );
+    let accumulator = 0;
 
     return Promise.all(
-      interactions.map((interaction) =>
-        this.calculateAudienceTime(interaction, article),
-      ),
+      interactions.map((interaction) => {
+        if (!interaction.isAccumulated) {
+          accumulator += interaction.audienceTime;
+          interaction.audienceTime = accumulator;
+
+          return this.interactionsRepository.save(interaction);
+        } else {
+          accumulator = interaction.audienceTime;
+          return interaction;
+        }
+      }),
     );
   }
 
