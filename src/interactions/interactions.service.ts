@@ -504,7 +504,7 @@ export class InteractionsService implements OnModuleInit {
           {
             repeat: { cron: CronExpression.EVERY_5_MINUTES },
             attempts: 5,
-            priority: 1,
+            removeOnComplete: true,
           },
         );
       });
