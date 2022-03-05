@@ -30,6 +30,9 @@ AdminJS.registerAdapter({ Database, Resource });
             host,
             port: Number(port),
             password,
+            tls: {
+              rejectUnauthorized: false,
+            },
           },
         };
       },
