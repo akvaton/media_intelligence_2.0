@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { FindManyOptions, LessThan, Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -430,13 +430,8 @@ export class InteractionsService implements OnModuleInit {
     interaction.audienceTime = sum || 0;
     interaction.isAccumulated = true;
 
-    const savedInteraction = await this.interactionsRepository.save(
-      interaction,
-    );
+    await this.interactionsRepository.save(interaction);
 
-    this.logger.debug(
-      `Saved Interaction ${savedInteraction.id} ${savedInteraction.audienceTime}`,
-    );
     return { id: interaction.id, audienceTime: interaction.audienceTime };
   }
 
@@ -450,8 +445,8 @@ export class InteractionsService implements OnModuleInit {
       .andWhere('articles.pubDate < :start', {
         start: dayjs().subtract(96, 'hours').toISOString(),
       })
-      .take(5)
-      .orderBy({ ['articles.pubDate']: 'DESC' })
+      .take(10)
+      .orderBy({ ['articles.pubDate']: 'ASC' })
       .getRawMany();
 
     this.logger.debug('Ensure Articles: ', JSON.stringify(articles));
