@@ -370,6 +370,11 @@ export class InteractionsService implements OnModuleInit {
           throw e;
         });
       const interaction = articleInteractions[interactionIndex];
+
+      if (interaction.isAccumulated && interaction.audienceTime > 0) {
+        return interaction;
+      }
+
       const previousInteractions = articleInteractions.slice(
         0,
         interactionIndex,
@@ -433,13 +438,6 @@ export class InteractionsService implements OnModuleInit {
       `Saved Interaction ${savedInteraction.id} ${savedInteraction.audienceTime}`,
     );
     return { id: interaction.id, audienceTime: interaction.audienceTime };
-  }
-
-  async ensureAccumulatedArticleInteraction() {
-    const startTime = dayjs().subtract(INTERACTIONS_PROCESSES_FINISH * 2, 'ms');
-    const articles = this.newsRepository.find({
-      where: { pubDate: LessThan(startTime) },
-    });
   }
 
   async ensureAccumulatedInteractions() {
