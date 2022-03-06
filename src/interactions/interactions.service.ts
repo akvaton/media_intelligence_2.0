@@ -450,8 +450,8 @@ export class InteractionsService implements OnModuleInit {
       .andWhere('articles.pubDate < :start', {
         start: dayjs().subtract(96, 'hours').toISOString(),
       })
-      .take(15)
-      .orderBy({ ['articles.pubDate']: 'ASC' })
+      .take(5)
+      .orderBy({ ['articles.pubDate']: 'DESC' })
       .getRawMany();
 
     this.logger.debug('Ensure Articles: ', JSON.stringify(articles));
