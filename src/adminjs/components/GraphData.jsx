@@ -70,7 +70,19 @@ const GraphData = ({ record }) => {
               }, Interactions log = ${this.y}`;
             },
           },
-          series: [{ name: '', data, keys: ['x', 'y'] }],
+          series: [
+            {
+              name: '',
+              data,
+              keys: ['x', 'y'],
+              regression: id.includes('selectedFragment') && data.length,
+              regressionSettings: {
+                name: 'R^2 = %r2',
+                type: 'linear',
+                lineWidth: 1,
+              },
+            },
+          ],
           plotOptions: { series: { marker: { enabled: true } } },
         });
       });

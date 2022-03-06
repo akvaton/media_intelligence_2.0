@@ -14,6 +14,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
     scripts: [
       'https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js',
       'https://code.highcharts.com/highcharts.js',
+      'https://rawgithub.com/phpepe/highcharts-regression/master/highcharts-regression.js?8',
     ],
   },
   resources: [
