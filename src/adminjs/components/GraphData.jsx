@@ -91,12 +91,25 @@ const GraphData = ({ record }) => {
       .catch((error) => {
         setCalculating(false);
         console.error(error);
-        alert('Calculation failed due to high load; Please try again later');
+        alert('Calculation failed due to an error; Please try again later');
       });
   };
 
   const getTwitterInteractions = () => {
-    axios.post(`/articles/twitter-interactions/${record.id}`).then(recalculate);
+    if (
+      confirm(
+        'Are you sure? This will delete all the existing interactions first; New ones may be not collected',
+      )
+    ) {
+      axios
+        .post(`/articles/twitter-interactions/${record.id}`)
+        .then(() => {
+          if (confirm('Interactions collected! Recalculate audience time?')) {
+            recalculate();
+          }
+        })
+        .catch(alert);
+    }
   };
 
   return (

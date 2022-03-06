@@ -452,7 +452,7 @@ export class InteractionsService implements OnModuleInit {
       .andWhere('articles.pubDate < :start', {
         start: dayjs().subtract(96, 'hours').toISOString(),
       })
-      .take(10)
+      .take(15)
       .orderBy({ ['articles.pubDate']: 'ASC' })
       .getRawMany();
 
@@ -463,32 +463,6 @@ export class InteractionsService implements OnModuleInit {
         this.recalculateAudienceTimeOnDemand(article.id),
       ),
     );
-    // const firstHourToCheck = dayjs().subtract(96, 'hours').toDate();
-    // this.logger.debug('FIRST HOUR TO CHECK', firstHourToCheck);
-    // const lostInteractions = await this.interactionsRepository.find({
-    //   where: {
-    //     requestTime: LessThan(firstHourToCheck),
-    //     isAccumulated: false,
-    //   },
-    //   relations: ['article'],
-    //   take: 60,
-    //   order: { requestTime: 'DESC' },
-    // });
-    // this.logger.debug(
-    //   'NON-ACCUMULATED INTERACTIONS:',
-    //   JSON.stringify(
-    //     lostInteractions.map(({ id, requestTime, ...rest }) => ({
-    //       id,
-    //       requestTime,
-    //     })),
-    //   ),
-    // );
-    //
-    // return Promise.all(
-    //   lostInteractions.map(async (interaction) => {
-    //     return this.calculateAudienceTime(interaction, interaction.article);
-    //   }),
-    // );
   }
 
   async onModuleInit() {
@@ -516,11 +490,24 @@ export class InteractionsService implements OnModuleInit {
       where: { articleId },
       order: { requestTime: 'ASC' },
     });
-    this.logger.debug(
-      `CALCULATE ON DEMAND ${articleId}, Interactions: ${interactions.length}`,
-    );
     let accumulator = 0;
 
+    await this.audienceTimeQueue
+      .getJob(articleId)
+      .then((job) => job?.remove())
+      .catch(this.logger.error);
+
+    if (interactions.some((interaction) => interaction.audienceTime < 0)) {
+      const article = await this.newsRepository.findOne(articleId);
+
+      return Promise.all(
+        interactions.map(
+          (interaction) =>
+            interaction.audienceTime < 0 &&
+            this.calculateAudienceTime(interaction, article),
+        ),
+      );
+    }
     return Promise.all(
       interactions.map((interaction) => {
         if (!interaction.isAccumulated) {
@@ -538,6 +525,7 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async twitterInteractionsOnDemand(articleId) {
+    await this.interactionsRepository.delete({ articleId });
     return this.processTwitterInteractions(articleId);
   }
 }
