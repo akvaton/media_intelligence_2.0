@@ -465,15 +465,15 @@ export class InteractionsService implements OnModuleInit {
           this.audienceTimeQueue.removeRepeatableByKey(job.key),
         ),
       ).then(() => {
-        this.audienceTimeQueue.add(
-          ENSURE_ACCUMULATED_INTERACTIONS,
-          {},
-          {
-            repeat: { cron: CronExpression.EVERY_5_MINUTES },
-            attempts: 5,
-            removeOnComplete: true,
-          },
-        );
+        // this.audienceTimeQueue.add(
+        //   ENSURE_ACCUMULATED_INTERACTIONS,
+        //   {},
+        //   {
+        //     repeat: { cron: CronExpression.EVERY_5_MINUTES },
+        //     attempts: 5,
+        //     removeOnComplete: true,
+        //   },
+        // );
       });
     });
   }
