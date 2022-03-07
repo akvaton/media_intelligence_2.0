@@ -436,6 +436,9 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedInteractions() {
+    this.logger.debug('Ensure Articles SKIPPED!');
+    return;
+
     const articles = await this.newsRepository
       .createQueryBuilder('articles')
       .select('*')
