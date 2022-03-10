@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { FindManyOptions, Repository } from 'typeorm';
+import { FindManyOptions, MoreThan, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -437,8 +437,13 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedInteractions() {
-    this.logger.debug('Ensure Articles SKIPPED!');
-    return;
+    const articlesToRecalculate = await this.newsRepository.find({
+      twitterRegression: MoreThan(0),
+    });
+    this.logger.debug(
+      `Recalculate Articles Len ${articlesToRecalculate.length}`,
+    );
+    return Promise.all(articlesToRecalculate.map((a) => a.save()));
 
     const articles = await this.newsRepository
       .createQueryBuilder('articles')
@@ -463,23 +468,15 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.audienceTimeQueue.getRepeatableJobs().then((repeatableJobs) => {
-      Promise.all(
-        repeatableJobs.map((job) =>
-          this.audienceTimeQueue.removeRepeatableByKey(job.key),
-        ),
-      ).then(() => {
-        // this.audienceTimeQueue.add(
-        //   ENSURE_ACCUMULATED_INTERACTIONS,
-        //   {},
-        //   {
-        //     repeat: { cron: CronExpression.EVERY_5_MINUTES },
-        //     attempts: 5,
-        //     removeOnComplete: true,
-        //   },
-        // );
-      });
-    });
+    this.audienceTimeQueue.add(
+      ENSURE_ACCUMULATED_INTERACTIONS,
+      {},
+      {
+        // repeat: { cron: CronExpression.EVERY_5_MINUTES },
+        attempts: 5,
+        // removeOnComplete: true,
+      },
+    );
   }
 
   async recalculateAudienceTimeOnDemand(articleId: number) {
