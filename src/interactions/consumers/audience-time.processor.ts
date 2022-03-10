@@ -4,6 +4,7 @@ import { InteractionsService } from '../interactions.service';
 import {
   AUDIENCE_TIME_QUEUE,
   ENSURE_ACCUMULATED_INTERACTIONS,
+  RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
   TWITTER_AUDIENCE_TIME_JOB,
   UKRAINIAN_AUDIENCE_TIME_JOB,
 } from 'src/config/constants';
@@ -56,5 +57,12 @@ export class AudienceTimeProcessor {
   @Process(ENSURE_ACCUMULATED_INTERACTIONS)
   async ensureInteractionsProcessor() {
     return this.interactionsService.ensureAccumulatedInteractions();
+  }
+
+  @Process(RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE)
+  async recalculateArticleCoefficientProcessor(job: Job<{ articleId }>) {
+    return this.interactionsService.recalculateArticleCoefficient(
+      job.data.articleId,
+    );
   }
 }

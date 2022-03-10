@@ -22,6 +22,7 @@ import {
   BIGMIR_MEDIA_SELECTOR,
   ENSURE_ACCUMULATED_INTERACTIONS,
   FACEBOOK_QUEUE,
+  RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
   TWITTER_AUDIENCE_TIME_JOB,
   TWITTER_QUEUE,
   UKRAINIAN_AUDIENCE_TIME_JOB,
@@ -129,7 +130,6 @@ export class InteractionsService implements OnModuleInit {
       ((xSum / xAverage) * xySum - xSum * ySum) /
       ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2));
 
-    this.logger.debug({ startIndex, endIndex, result, coefficient });
     return isNaN(coefficient) ? -1 : coefficient;
   }
 
@@ -443,7 +443,20 @@ export class InteractionsService implements OnModuleInit {
     this.logger.debug(
       `Recalculate Articles Len ${articlesToRecalculate.length}`,
     );
-    return Promise.all(articlesToRecalculate.map((a) => a.save()));
+
+    return Promise.all(
+      articlesToRecalculate.map((article) => {
+        return this.audienceTimeQueue.add(
+          RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
+          {
+            articleId: article.id,
+          },
+          {
+            jobId: article.id,
+          },
+        );
+      }),
+    );
 
     const articles = await this.newsRepository
       .createQueryBuilder('articles')
@@ -521,5 +534,11 @@ export class InteractionsService implements OnModuleInit {
   async twitterInteractionsOnDemand(articleId) {
     await this.interactionsRepository.delete({ articleId });
     return this.processTwitterInteractions(articleId);
+  }
+
+  async recalculateArticleCoefficient(articleId) {
+    const article = await this.newsRepository.findOne(articleId);
+
+    return article.save();
   }
 }

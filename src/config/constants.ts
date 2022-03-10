@@ -11,3 +11,6 @@ export const BIGMIR_MEDIA_SELECTOR =
   '#container_main > div.page2.g-clearfix > div.doublecol.normal.fr > table:nth-child(3) > tbody > tr:nth-child(18) > td:nth-child(3)';
 export const ENSURE_ACCUMULATED_INTERACTIONS =
   'ensure-accumulated-interactions';
+
+export const RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE =
+  'RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE';
