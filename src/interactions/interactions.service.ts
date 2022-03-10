@@ -109,7 +109,7 @@ export class InteractionsService implements OnModuleInit {
     key: SocialMediaKey,
   ) {
     const startIndex = newsItem[`${key}StartIndex`] - 1;
-    const endIndex = newsItem[`${key}EndIndex`] - 1;
+    const endIndex = newsItem[`${key}EndIndex`];
     const analyzedFragment = graphData.slice(startIndex, endIndex);
     const result = analyzedFragment.reduce(
       (accumulator, currentItem) => {
