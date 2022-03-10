@@ -108,8 +108,8 @@ export class InteractionsService implements OnModuleInit {
     graphData: GraphData,
     key: SocialMediaKey,
   ) {
-    const startIndex = newsItem[`${key}StartIndex`];
-    const endIndex = newsItem[`${key}EndIndex`];
+    const startIndex = newsItem[`${key}StartIndex`] - 1;
+    const endIndex = newsItem[`${key}EndIndex`] - 1;
     const analyzedFragment = graphData.slice(startIndex, endIndex);
     const result = analyzedFragment.reduce(
       (accumulator, currentItem) => {
@@ -129,6 +129,7 @@ export class InteractionsService implements OnModuleInit {
       ((xSum / xAverage) * xySum - xSum * ySum) /
       ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2));
 
+    this.logger.debug({ startIndex, endIndex, result, coefficient });
     return isNaN(coefficient) ? -1 : coefficient;
   }
 
