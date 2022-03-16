@@ -437,26 +437,26 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedInteractions() {
-    const articlesToRecalculate = await this.newsRepository.find({
-      twitterRegression: MoreThan(0),
-    });
-    this.logger.debug(
-      `Recalculate Articles Len ${articlesToRecalculate.length}`,
-    );
-
-    return Promise.all(
-      articlesToRecalculate.map((article) => {
-        return this.audienceTimeQueue.add(
-          RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
-          {
-            articleId: article.id,
-          },
-          {
-            jobId: article.id,
-          },
-        );
-      }),
-    );
+    // const articlesToRecalculate = await this.newsRepository.find({
+    //   twitterRegression: MoreThan(0),
+    // });
+    // this.logger.debug(
+    //   `Recalculate Articles Len ${articlesToRecalculate.length}`,
+    // );
+    //
+    // return Promise.all(
+    //   articlesToRecalculate.map((article) => {
+    //     return this.audienceTimeQueue.add(
+    //       RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
+    //       {
+    //         articleId: article.id,
+    //       },
+    //       {
+    //         jobId: article.id,
+    //       },
+    //     );
+    //   }),
+    // );
 
     const articles = await this.newsRepository
       .createQueryBuilder('articles')
