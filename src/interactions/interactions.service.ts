@@ -481,15 +481,7 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.audienceTimeQueue.add(
-      ENSURE_ACCUMULATED_INTERACTIONS,
-      {},
-      {
-        // repeat: { cron: CronExpression.EVERY_5_MINUTES },
-        attempts: 5,
-        // removeOnComplete: true,
-      },
-    );
+    // TBD
   }
 
   async recalculateAudienceTimeOnDemand(articleId: number) {
