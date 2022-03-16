@@ -6,8 +6,14 @@ const ExportInteractions = (props) => {
 
   useEffect(() => {
     const newsData = props.records.map(({ params, populated }) => {
-      const { title, link, pubDate, twitterRegression, facebookRegression } =
-        params;
+      const {
+        title,
+        link,
+        pubDate,
+        twitterRegression,
+        facebookRegression,
+        twitterInteractions,
+      } = params;
       const { sourceId } = populated;
       const { name } = sourceId.params;
 
@@ -18,6 +24,7 @@ const ExportInteractions = (props) => {
         ['Twitter interactive potential']: twitterRegression,
         ['Facebook interactive potential']: facebookRegression,
         ['Source Feed']: name,
+        ['Twitter interactions']: twitterInteractions,
       };
     });
     const workSheet = XLSX.utils.json_to_sheet(newsData);

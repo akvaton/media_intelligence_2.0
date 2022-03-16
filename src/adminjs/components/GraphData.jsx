@@ -80,6 +80,7 @@ const GraphData = ({ record }) => {
                 name: 'R^2 = %r2',
                 type: 'linear',
                 lineWidth: 1,
+                decimalPlaces: 3,
               },
             },
           ],
