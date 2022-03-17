@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { FindManyOptions, MoreThan, Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -22,7 +22,6 @@ import {
   BIGMIR_MEDIA_SELECTOR,
   ENSURE_ACCUMULATED_INTERACTIONS,
   FACEBOOK_QUEUE,
-  RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
   TWITTER_AUDIENCE_TIME_JOB,
   TWITTER_QUEUE,
   UKRAINIAN_AUDIENCE_TIME_JOB,
@@ -437,27 +436,6 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedInteractions() {
-    // const articlesToRecalculate = await this.newsRepository.find({
-    //   twitterRegression: MoreThan(0),
-    // });
-    // this.logger.debug(
-    //   `Recalculate Articles Len ${articlesToRecalculate.length}`,
-    // );
-    //
-    // return Promise.all(
-    //   articlesToRecalculate.map((article) => {
-    //     return this.audienceTimeQueue.add(
-    //       RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
-    //       {
-    //         articleId: article.id,
-    //       },
-    //       {
-    //         jobId: article.id,
-    //       },
-    //     );
-    //   }),
-    // );
-
     const articles = await this.newsRepository
       .createQueryBuilder('articles')
       .select('*')
@@ -467,7 +445,7 @@ export class InteractionsService implements OnModuleInit {
       .andWhere('articles.pubDate < :start', {
         start: dayjs().subtract(96, 'hours').toISOString(),
       })
-      .take(10)
+      .take(5)
       .orderBy({ ['articles.pubDate']: 'ASC' })
       .getRawMany();
 
@@ -480,8 +458,16 @@ export class InteractionsService implements OnModuleInit {
     );
   }
 
-  async onModuleInit() {
-    // TBD
+  onModuleInit() {
+    this.audienceTimeQueue.add(
+      ENSURE_ACCUMULATED_INTERACTIONS,
+      {},
+      {
+        repeat: { cron: CronExpression.EVERY_30_MINUTES },
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
   }
 
   async recalculateAudienceTimeOnDemand(articleId: number) {
