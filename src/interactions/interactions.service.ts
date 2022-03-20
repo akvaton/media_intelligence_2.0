@@ -436,6 +436,7 @@ export class InteractionsService implements OnModuleInit {
   }
 
   async ensureAccumulatedInteractions() {
+    return;
     const articles = await this.newsRepository
       .createQueryBuilder('articles')
       .select('*')
