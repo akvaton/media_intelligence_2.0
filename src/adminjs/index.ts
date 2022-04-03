@@ -5,6 +5,7 @@ import AdminJS, { AdminJSOptions } from 'adminjs';
 import ListAction from './utils/custom-article-list';
 import EditAction from './utils/custom-article-edit';
 import ExportAction from './utils/action-article-export';
+import CalculateRegressionCoefficientAction from './utils/action-article-calculate-potential';
 
 let lastPosition = 1000;
 
@@ -31,6 +32,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
           list: ListAction,
           edit: EditAction,
           exportData: ExportAction,
+          calculateRegressionCoefficient: CalculateRegressionCoefficientAction,
         },
         properties: {
           facebookInteractions: {
@@ -92,7 +94,7 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
             isVisible: { show: true },
           },
           id: {
-            isVisible: { list: true, show: true },
+            isVisible: { list: true, show: true, filter: true },
           },
           title: {
             isVisible: { edit: false, list: true, show: true, filter: true },

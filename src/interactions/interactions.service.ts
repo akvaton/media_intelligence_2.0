@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { FindManyOptions, Repository } from 'typeorm';
+import { FindManyOptions, In, Repository } from 'typeorm';
 import { Queue } from 'bull';
 import TwitterApi from 'twitter-api-v2';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,10 +25,17 @@ import {
   TWITTER_AUDIENCE_TIME_JOB,
   TWITTER_QUEUE,
   UKRAINIAN_AUDIENCE_TIME_JOB,
+  REGRESSION_MIN_VALUE,
 } from 'src/config/constants';
 import { GraphData, SocialMediaKey } from './dto/interaction.dto';
 import { FeedOrigin } from '../feeds/entities/feed.entity';
 import { CronExpression } from '@nestjs/schedule';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const regression = require('regression');
+
+import { calculateRegressionCoefficient } from '../utils/regression-coefficient';
+import { getChunks } from '../utils/chunks';
 
 @Injectable()
 export class InteractionsService implements OnModuleInit {
@@ -110,26 +117,11 @@ export class InteractionsService implements OnModuleInit {
   ) {
     const startIndex = newsItem[`${key}StartIndex`] - 1;
     const endIndex = newsItem[`${key}EndIndex`];
-    const analyzedFragment = graphData.slice(startIndex, endIndex);
-    const result = analyzedFragment.reduce(
-      (accumulator, currentItem) => {
-        accumulator.xSum += currentItem.audienceTime;
-        accumulator.ySum += currentItem[key as string];
-        accumulator.xySum +=
-          currentItem[key as string] * currentItem.audienceTime;
-        accumulator.x2Sum += Math.pow(currentItem.audienceTime, 2);
-        accumulator.xAverage = accumulator.xSum / analyzedFragment.length;
+    const analyzedFragment = graphData
+      .slice(startIndex, endIndex)
+      .map((item) => ({ x: item.audienceTime, y: item[key as string] }));
 
-        return accumulator;
-      },
-      { xSum: 0, ySum: 0, xySum: 0, x2Sum: 0, xAverage: 0, yAverage: 0 },
-    );
-    const { xSum, ySum, xySum, x2Sum, xAverage } = result;
-    const coefficient =
-      ((xSum / xAverage) * xySum - xSum * ySum) /
-      ((xSum / xAverage) * x2Sum - Math.pow(xSum, 2));
-
-    return isNaN(coefficient) ? -1 : coefficient;
+    return calculateRegressionCoefficient(analyzedFragment);
   }
 
   private async getFacebookInteractions(newsItem: Article) {
@@ -520,4 +512,101 @@ export class InteractionsService implements OnModuleInit {
 
     return article.save();
   }
+
+  async calculateBestTwitterRegressionOption(articleIds: Array<string>) {
+    const articles = await this.newsRepository.find({
+      where: { id: In(articleIds.map((item) => Number(item))) },
+      relations: ['interactions'],
+    });
+
+    return Promise.all(
+      articles.map(async (article) => {
+        const interactivePotentialData =
+          this.getInteractivePotentialData(article);
+
+        if (!interactivePotentialData) {
+          article.twitterRegression = -2;
+        } else {
+          const { regressionCoefficient, start, end } =
+            interactivePotentialData;
+          article.twitterStartIndex = start + 1;
+          article.twitterEndIndex = end;
+          article.twitterRegression = regressionCoefficient;
+        }
+
+        await article.save();
+        return { id: article.id, twitterRegression: article.twitterRegression };
+      }),
+    );
+  }
+
+  private getInteractivePotentialData = (article: Article) => {
+    let bestValue = null;
+    const stepsVariants = [5, 4];
+    const minimumR2Variants = [0.99, 0.97];
+    const { interactions } = article;
+
+    for (const r2Variant of minimumR2Variants) {
+      if (bestValue) {
+        break;
+      }
+
+      for (const variant of stepsVariants) {
+        if (bestValue) {
+          break;
+        }
+
+        let delta = 0;
+        const normalizedData = interactions.map((interaction, index) => {
+          if (
+            interaction.audienceTime < interactions[index - 1]?.audienceTime
+          ) {
+            delta += interactions[index - 1].audienceTime;
+          }
+
+          return {
+            ...interaction,
+            audienceTime: interaction.audienceTime + delta,
+          } as Interaction;
+        });
+        const graphData = this.getGraphData(normalizedData) || [];
+        const chunks = getChunks(graphData, variant);
+
+        bestValue = chunks.reduce(
+          (result: { regressionCoefficient: number } | null, current) => {
+            const analyzedFragment = current.chunk.map(
+              ({ audienceTime: x, twitter: y }) => ({ x, y }),
+            );
+            const { r2 } = regression.linear(
+              current.chunk.map(({ audienceTime, twitter }) => [
+                audienceTime,
+                twitter,
+              ]),
+              { precision: 3 },
+            );
+            const regressionCoefficient =
+              calculateRegressionCoefficient(analyzedFragment);
+            if (
+              isNaN(r2) ||
+              regressionCoefficient < REGRESSION_MIN_VALUE ||
+              !isFinite(regressionCoefficient)
+            ) {
+              return result;
+            }
+
+            if (
+              (!result && r2 >= r2Variant) ||
+              (result && result.regressionCoefficient < regressionCoefficient)
+            ) {
+              return { ...current, regressionCoefficient };
+            }
+
+            return result;
+          },
+          bestValue,
+        );
+      }
+    }
+    return bestValue;
+  };
 }

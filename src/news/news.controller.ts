@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Feed } from '../feeds/entities/feed.entity';
 import { Repository } from 'typeorm';
@@ -46,5 +46,14 @@ export class NewsController {
   @Post('/twitter-interactions/:id')
   async getTwitterInteractions(@Param() params) {
     return this.interactionsService.twitterInteractionsOnDemand(params.id);
+  }
+
+  @Post('/calculate-interactive-potential/:ids')
+  calculateInteractivePotential(@Param() params: any) {
+    const { ids } = params;
+
+    return this.interactionsService.calculateBestTwitterRegressionOption(
+      ids.split(','),
+    );
   }
 }
