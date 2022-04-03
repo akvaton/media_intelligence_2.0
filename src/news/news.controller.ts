@@ -35,7 +35,7 @@ export class NewsController {
     const graphData =
       this.interactionsService.getGraphData(normalizedData) || [];
 
-    return JSON.stringify({ articleData, graphData });
+    return JSON.stringify({ articleData, graphData, interactions });
   }
 
   @Post('/recalculate/:id')

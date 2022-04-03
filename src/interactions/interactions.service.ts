@@ -586,8 +586,10 @@ export class InteractionsService implements OnModuleInit {
             );
             const regressionCoefficient =
               calculateRegressionCoefficient(analyzedFragment);
+
             if (
               isNaN(r2) ||
+              r2 < r2Variant ||
               regressionCoefficient < REGRESSION_MIN_VALUE ||
               !isFinite(regressionCoefficient)
             ) {
@@ -595,8 +597,8 @@ export class InteractionsService implements OnModuleInit {
             }
 
             if (
-              (!result && r2 >= r2Variant) ||
-              (result && result.regressionCoefficient < regressionCoefficient)
+              !result ||
+              result.regressionCoefficient < regressionCoefficient
             ) {
               return { ...current, regressionCoefficient };
             }
@@ -607,6 +609,7 @@ export class InteractionsService implements OnModuleInit {
         );
       }
     }
+    debugger;
     return bestValue;
   };
 }

@@ -25,6 +25,8 @@ const CalculateRegressionCoefficient = (props) => {
               .map(({ id }) => id)
               .join(',')}) are failed to process`,
           );
+        } else {
+          alert('Success!');
         }
         history.goBack();
       })

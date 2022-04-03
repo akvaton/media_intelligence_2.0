@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { Button } from '@adminjs/design-system';
 import axios from 'axios';
 
 const GraphData = ({ record }) => {
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [interactions, setInteractions] = useState([]);
   const fetchAndShowData = () => {
     setLoading(true);
     axios.get(`/articles/${record.id}`).then(({ data }) => {
-      const { articleData, graphData } = data;
+      const { articleData, graphData, interactions } = data;
       const {
         facebookStartIndex,
         facebookEndIndex,
@@ -32,6 +34,7 @@ const GraphData = ({ record }) => {
       );
 
       setLoading(false);
+      setInteractions(interactions);
       [
         {
           title: 'Full Graph Twitter',
@@ -108,6 +111,17 @@ const GraphData = ({ record }) => {
       });
   };
 
+  const downloadInteractionsData = () => {
+    const workSheet = XLSX.utils.json_to_sheet(interactions);
+    const workBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      workBook,
+      workSheet,
+      `Article Interactions ${record.id}`,
+    );
+    XLSX.writeFile(workBook, `Article Interactions ${record.id}.xlsx`);
+  };
+
   const getTwitterInteractions = () => {
     if (
       confirm(
@@ -127,10 +141,27 @@ const GraphData = ({ record }) => {
 
   return (
     <div>
-      <button onClick={getTwitterInteractions}>Get Twitter Interactions</button>
-      <button onClick={recalculate} disabled={calculating}>
+      <Button
+        variant={'danger'}
+        style={{ marginRight: 5 }}
+        onClick={getTwitterInteractions}
+      >
+        Get Twitter Interactions
+      </Button>
+      <Button
+        style={{ marginRight: 5 }}
+        onClick={recalculate}
+        disabled={calculating}
+      >
         Count Audience Time
-      </button>
+      </Button>
+      <Button
+        disabled={!interactions.length}
+        variant="info"
+        onClick={downloadInteractionsData}
+      >
+        Download Interactions Excel
+      </Button>
       {loading && 'Loading...'}
       {calculating && <p>Calculating...</p>}
       <div id="containerTwitter" />
