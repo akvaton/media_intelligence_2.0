@@ -21,7 +21,6 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@adminjs/design-system": "^2.2.1",
     "@adminjs/express": "^4.1.0",
     "@adminjs/nestjs": "^4.0.1",
     "@adminjs/typeorm": "^2.0.3",

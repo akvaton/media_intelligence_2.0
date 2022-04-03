@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Button } from '@adminjs/design-system';
+// import { Button } from '@adminjs/design-system';
 import axios from 'axios';
 
 const GraphData = ({ record }) => {
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [interactions, setInteractions] = useState([]);
+
   const fetchAndShowData = () => {
     setLoading(true);
     axios.get(`/articles/${record.id}`).then(({ data }) => {
@@ -141,27 +142,27 @@ const GraphData = ({ record }) => {
 
   return (
     <div>
-      <Button
+      <button
         variant={'danger'}
         style={{ marginRight: 5 }}
         onClick={getTwitterInteractions}
       >
         Get Twitter Interactions
-      </Button>
-      <Button
+      </button>
+      <button
         style={{ marginRight: 5 }}
         onClick={recalculate}
         disabled={calculating}
       >
         Count Audience Time
-      </Button>
-      <Button
+      </button>
+      <button
         disabled={!interactions.length}
         variant="info"
         onClick={downloadInteractionsData}
       >
         Download Interactions Excel
-      </Button>
+      </button>
       {loading && 'Loading...'}
       {calculating && <p>Calculating...</p>}
       <div id="containerTwitter" />
