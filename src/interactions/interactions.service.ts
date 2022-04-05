@@ -543,7 +543,7 @@ export class InteractionsService implements OnModuleInit {
   private getInteractivePotentialData = (article: Article) => {
     let bestValue = null;
     const stepsVariants = [5, 4];
-    const minimumR2Variants = [0.99, 0.97];
+    const minimumR2Variants = [0.985, 0.97];
     const { interactions } = article;
 
     for (const r2Variant of minimumR2Variants) {
@@ -582,7 +582,7 @@ export class InteractionsService implements OnModuleInit {
                 audienceTime,
                 twitter,
               ]),
-              { precision: 3 },
+              { precision: 4 },
             );
             const regressionCoefficient =
               calculateRegressionCoefficient(analyzedFragment);
