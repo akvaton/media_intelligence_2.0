@@ -456,7 +456,8 @@ export class InteractionsService implements OnModuleInit {
 
   onModuleInit() {
     this.logger.debug('Pausing the queue');
-    this.twitterInteractionsQueue.pause();
+    this.twitterInteractionsQueue.resume();
+    // this.audienceTimeQueue.pause();
     this.enqueueGeneralAudienceTimeMeasuring();
     // this.audienceTimeQueue.add(
     //   ENSURE_ACCUMULATED_INTERACTIONS,
