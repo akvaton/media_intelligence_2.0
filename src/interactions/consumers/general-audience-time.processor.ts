@@ -15,9 +15,11 @@ export class GeneralAudienceTimeProcessor {
   @Process(GENERAL_TWITTER_AUDIENCE_TIME_JOB)
   async measureGeneralTwitterAudienceTime(job: Job<{ requestTime?: string }>) {
     const { requestTime } = job.data;
-    const measuredTime = (requestTime ? dayjs(requestTime) : dayjs())
-      .subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
-      .startOf('minute');
+    const measuredTime = (
+      requestTime
+        ? dayjs(requestTime)
+        : dayjs().subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
+    ).startOf('minute');
 
     return await this.interactionsService.measureGeneralTwitterAudienceTime(
       measuredTime.toDate(),

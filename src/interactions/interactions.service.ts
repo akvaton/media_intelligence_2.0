@@ -403,7 +403,7 @@ export class InteractionsService implements OnModuleInit {
         const { sum } = await this.audienceTimeRepository
           .createQueryBuilder('audienceTime')
           .select('SUM(audienceTime.twitterInteractions)', 'sum')
-          .where('interaction."Time of request" BETWEEN :start AND :end', {
+          .where('audienceTime."Time of request" BETWEEN :start AND :end', {
             start,
             end,
           })
@@ -489,7 +489,7 @@ export class InteractionsService implements OnModuleInit {
 
   onModuleInit() {
     this.recalculateGeneralAudienceTime();
-    // this.enqueueGeneralAudienceTimeMeasuring();
+    this.enqueueGeneralAudienceTimeMeasuring();
     // this.audienceTimeQueue.add(
     //   ENSURE_ACCUMULATED_INTERACTIONS,
     //   {},
