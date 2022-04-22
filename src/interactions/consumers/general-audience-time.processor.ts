@@ -15,7 +15,6 @@ export class GeneralAudienceTimeProcessor {
   async measureGeneralTwitterAudienceTime() {
     const measuredTime = dayjs().subtract(INTERACTIONS_PROCESSES_FINISH, 'ms');
 
-    console.log({ measuredTime });
     await this.interactionsService.measureGeneralTwitterAudienceTime(
       measuredTime.toDate(),
     );
