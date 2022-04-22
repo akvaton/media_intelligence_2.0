@@ -11,7 +11,7 @@ import * as dayjs from 'dayjs';
 import { HttpService } from '@nestjs/axios';
 import { JSDOM } from 'jsdom';
 import {
-  AUDIENCE_TIME_EVERY,
+  AUDIENCE_TIME_EVERY_MINUTES,
   INTERACTIONS_PROCESSES_EVERY,
   INTERACTIONS_PROCESSES_FINISH,
   INTERACTIONS_PROCESSES_LIMIT,
@@ -387,27 +387,31 @@ export class InteractionsService implements OnModuleInit {
         previousInteractions.every((interaction) => interaction.isAccumulated)
       ) {
         const previousInteraction = articleInteractions[interactionIndex - 1];
-        const rounded =
-          Math.round(dayjs(interaction.requestTime).minute() / 15) * 15;
-        const nearestInteractionDate = dayjs(interaction.requestTime)
-          .minute(rounded)
-          .startOf('minute')
-          .toDate();
+        const [start, end] = [previousInteraction, interaction].map(
+          ({ requestTime }) => {
+            const rounded =
+              Math.round(
+                dayjs(requestTime).minute() / AUDIENCE_TIME_EVERY_MINUTES,
+              ) * AUDIENCE_TIME_EVERY_MINUTES;
 
-        const nearestGeneralAudienceTime =
-          await this.audienceTimeRepository.findOne({
-            where: {
-              requestTime: nearestInteractionDate.toISOString(),
-            },
-          });
-        this.logger.debug({
-          nearestInteractionDate,
-          nearestGeneralAudienceTime,
-        });
-        if (nearestGeneralAudienceTime) {
-          interaction.audienceTime =
-            nearestGeneralAudienceTime.twitterInteractions +
-            previousInteraction.audienceTime;
+            return dayjs(requestTime)
+              .minute(rounded)
+              .startOf('minute')
+              .toISOString();
+          },
+        );
+        const { sum } = await this.audienceTimeRepository
+          .createQueryBuilder('audienceTime')
+          .select('SUM(audienceTime.twitterInteractions)', 'sum')
+          .where('interaction."Time of request" BETWEEN :start AND :end', {
+            start,
+            end,
+          })
+          .getRawOne();
+
+        this.logger.debug({ start, end, sum });
+        if (sum > 0) {
+          interaction.audienceTime = sum + previousInteraction.audienceTime;
         } else {
           const { sum } = await this.interactionsRepository
             .createQueryBuilder('interaction')
@@ -651,7 +655,7 @@ export class InteractionsService implements OnModuleInit {
       GENERAL_TWITTER_AUDIENCE_TIME_JOB,
       {},
       {
-        repeat: { cron: '0 */15 * * * *' }, // Every 15 minutes
+        repeat: { cron: `0 */${AUDIENCE_TIME_EVERY_MINUTES} * * * *` },
         timeout: 1000 * 60 * 2, // 10 seconds
         attempts: 5,
         removeOnComplete: true,
@@ -662,7 +666,9 @@ export class InteractionsService implements OnModuleInit {
   async measureGeneralTwitterAudienceTime(time: Date) {
     const requestTime = dayjs(time);
     const parameters = {
-      start: dayjs(time).subtract(AUDIENCE_TIME_EVERY).toISOString(),
+      start: dayjs(time)
+        .subtract(AUDIENCE_TIME_EVERY_MINUTES, 'minutes')
+        .toISOString(),
       end: requestTime.toISOString(),
     };
     this.logger.debug({ parameters });

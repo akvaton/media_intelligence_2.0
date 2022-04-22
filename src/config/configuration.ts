@@ -1,4 +1,9 @@
-export const INTERACTIONS_PROCESSES_LIMIT = (60 / 30) * 48; // twice per 48 hours
-export const INTERACTIONS_PROCESSES_EVERY = 1000 * 60 * 30; // 30 minutes
-export const INTERACTIONS_PROCESSES_FINISH = 1000 * 60 * 60 * 48; // 48 hours
-export const AUDIENCE_TIME_EVERY = 1000 * 60 * 15; // 48 hours
+import { MINUTE } from './time-constants';
+
+export const INTERACTION_PROCESSES_LIMIT_HOURS = 48;
+export const INTERACTIONS_PROCESSES_LIMIT =
+  (60 / 30) * INTERACTION_PROCESSES_LIMIT_HOURS; // twice per 48 hours
+export const INTERACTIONS_PROCESSES_EVERY = MINUTE * 30; // 30 minutes
+export const INTERACTIONS_PROCESSES_FINISH =
+  MINUTE * 60 * INTERACTION_PROCESSES_LIMIT_HOURS; // 48 hours
+export const AUDIENCE_TIME_EVERY_MINUTES = 10;
