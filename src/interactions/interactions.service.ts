@@ -488,6 +488,10 @@ export class InteractionsService implements OnModuleInit {
   }
 
   onModuleInit() {
+    setInterval(
+      () => this.enqueueGeneralAudienceTimeMeasuring(),
+      INTERACTIONS_PROCESSES_EVERY,
+    );
     this.recalculateGeneralAudienceTime();
     // this.enqueueGeneralAudienceTimeMeasuring();
     // this.audienceTimeQueue.add(
@@ -667,6 +671,16 @@ export class InteractionsService implements OnModuleInit {
   async measureGeneralTwitterAudienceTime(time: Date) {
     try {
       const requestTime = dayjs(time);
+
+      const existingRow = await this.audienceTimeRepository.findOne({
+        where: { requestTime: requestTime.toISOString() },
+      });
+
+      if (existingRow) {
+        this.logger.debug(`Already exists ${requestTime}`);
+        return;
+      }
+
       const parameters = {
         start: dayjs(time)
           .subtract(AUDIENCE_TIME_EVERY_MINUTES, 'minutes')
@@ -686,14 +700,6 @@ export class InteractionsService implements OnModuleInit {
         `Measure GeneralTwitterAudienceTime for ${requestTime}: ${sum}`,
       );
 
-      const existingRow = await this.audienceTimeRepository.findOne({
-        where: { requestTime: requestTime.toISOString() },
-      });
-
-      if (existingRow) {
-        return;
-      }
-
       const audienceTime = new AudienceTime();
 
       audienceTime.requestTime = requestTime.toDate();
@@ -707,7 +713,7 @@ export class InteractionsService implements OnModuleInit {
   }
 
   public async recalculateGeneralAudienceTime() {
-    const startDate = dayjs().startOf('week');
+    const startDate = dayjs().startOf('month');
     const firstRow = await this.audienceTimeRepository.findOne({
       order: { requestTime: 'DESC' },
     });
