@@ -452,15 +452,17 @@ export class InteractionsService implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.audienceTimeQueue.add(
-      ENSURE_ACCUMULATED_INTERACTIONS,
-      {},
-      {
-        repeat: { cron: CronExpression.EVERY_30_MINUTES },
-        attempts: 5,
-        removeOnComplete: true,
-      },
-    );
+    this.logger.debug('Pausing the queue');
+    this.twitterInteractionsQueue.pause();
+    // this.audienceTimeQueue.add(
+    //   ENSURE_ACCUMULATED_INTERACTIONS,
+    //   {},
+    //   {
+    //     repeat: { cron: CronExpression.EVERY_30_MINUTES },
+    //     attempts: 5,
+    //     removeOnComplete: true,
+    //   },
+    // );
   }
 
   async recalculateAudienceTimeOnDemand(articleId: number) {
@@ -609,7 +611,7 @@ export class InteractionsService implements OnModuleInit {
         );
       }
     }
-    debugger;
+
     return bestValue;
   };
 }
