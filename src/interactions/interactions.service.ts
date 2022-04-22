@@ -489,7 +489,7 @@ export class InteractionsService implements OnModuleInit {
 
   onModuleInit() {
     this.recalculateGeneralAudienceTime();
-    this.enqueueGeneralAudienceTimeMeasuring();
+    // this.enqueueGeneralAudienceTimeMeasuring();
     // this.audienceTimeQueue.add(
     //   ENSURE_ACCUMULATED_INTERACTIONS,
     //   {},
