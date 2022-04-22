@@ -6,18 +6,20 @@ import {
 } from 'src/config/constants';
 import { INTERACTIONS_PROCESSES_FINISH } from '../../config/configuration';
 import * as dayjs from 'dayjs';
+import { Job } from 'bull';
 
 @Processor(GENERAL_AUDIENCE_TIME_QUEUE)
 export class GeneralAudienceTimeProcessor {
   constructor(private interactionsService: InteractionsService) {}
 
   @Process(GENERAL_TWITTER_AUDIENCE_TIME_JOB)
-  async measureGeneralTwitterAudienceTime() {
-    const measuredTime = dayjs()
+  async measureGeneralTwitterAudienceTime(job: Job<{ requestTime?: string }>) {
+    const { requestTime } = job.data;
+    const measuredTime = (requestTime ? dayjs(requestTime) : dayjs())
       .subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
       .startOf('minute');
 
-    await this.interactionsService.measureGeneralTwitterAudienceTime(
+    return await this.interactionsService.measureGeneralTwitterAudienceTime(
       measuredTime.toDate(),
     );
   }
