@@ -28,6 +28,7 @@ import {
   UKRAINIAN_AUDIENCE_TIME_JOB,
   REGRESSION_MIN_VALUE,
   GENERAL_TWITTER_AUDIENCE_TIME_JOB,
+  GENERAL_AUDIENCE_TIME_QUEUE,
 } from 'src/config/constants';
 import { GraphData, SocialMediaKey } from './dto/interaction.dto';
 import { FeedOrigin } from '../feeds/entities/feed.entity';
@@ -53,12 +54,16 @@ export class InteractionsService implements OnModuleInit {
     }>,
     @InjectQueue(AUDIENCE_TIME_QUEUE)
     private audienceTimeQueue: Queue,
+    @InjectQueue(GENERAL_AUDIENCE_TIME_QUEUE)
+    private generalAudienceTimeQueue: Queue,
     @InjectQueue(TWITTER_QUEUE)
     private twitterInteractionsQueue: Queue,
     @InjectRepository(Interaction)
     private interactionsRepository: Repository<Interaction>,
     @InjectRepository(Article)
     private newsRepository: Repository<Article>,
+    @InjectRepository(AudienceTime)
+    private audienceTimeRepository: Repository<AudienceTime>,
     private httpService: HttpService,
   ) {}
 
@@ -311,6 +316,7 @@ export class InteractionsService implements OnModuleInit {
         delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
         attempts: 5,
         backoff: { type: 'fixed', delay: 1000 * 60 * 5 },
+        priority: 2,
       },
     );
   }
@@ -381,16 +387,38 @@ export class InteractionsService implements OnModuleInit {
         previousInteractions.every((interaction) => interaction.isAccumulated)
       ) {
         const previousInteraction = articleInteractions[interactionIndex - 1];
-        const { sum } = await this.interactionsRepository
-          .createQueryBuilder('interaction')
-          .select('SUM(interaction.twitterInteractions)', 'sum')
-          .where('interaction."Time of request" BETWEEN :start AND :end', {
-            start: dayjs(previousInteraction.requestTime).toISOString(),
-            end: dayjs(interaction.requestTime).toISOString(),
-          })
-          .getRawOne();
+        const rounded =
+          Math.round(dayjs(interaction.requestTime).minute() / 15) * 15;
+        const nearestInteractionDate = dayjs(interaction.requestTime)
+          .minute(rounded)
+          .second(0)
+          .toDate();
 
-        interaction.audienceTime = sum + previousInteraction.audienceTime;
+        const nearestGeneralAudienceTime =
+          await this.audienceTimeRepository.findOne({
+            where: {
+              requestTime: nearestInteractionDate.toISOString(),
+            },
+          });
+        this.logger.debug({
+          nearestInteractionDate,
+          nearestGeneralAudienceTime,
+        });
+        if (nearestGeneralAudienceTime) {
+          interaction.audienceTime =
+            nearestGeneralAudienceTime.twitterInteractions;
+        } else {
+          const { sum } = await this.interactionsRepository
+            .createQueryBuilder('interaction')
+            .select('SUM(interaction.twitterInteractions)', 'sum')
+            .where('interaction."Time of request" BETWEEN :start AND :end', {
+              start: dayjs(previousInteraction.requestTime).toISOString(),
+              end: dayjs(interaction.requestTime).toISOString(),
+            })
+            .getRawOne();
+
+          interaction.audienceTime = sum + previousInteraction.audienceTime;
+        }
       } else {
         const { sum } = await this.interactionsRepository
           .createQueryBuilder('interaction')
@@ -457,7 +485,7 @@ export class InteractionsService implements OnModuleInit {
   onModuleInit() {
     this.logger.debug('Pausing the queue');
     this.twitterInteractionsQueue.resume();
-    // this.audienceTimeQueue.pause();
+    this.audienceTimeQueue.pause();
     this.enqueueGeneralAudienceTimeMeasuring();
     // this.audienceTimeQueue.add(
     //   ENSURE_ACCUMULATED_INTERACTIONS,
@@ -621,7 +649,7 @@ export class InteractionsService implements OnModuleInit {
   };
 
   private enqueueGeneralAudienceTimeMeasuring() {
-    return this.audienceTimeQueue.add(
+    return this.generalAudienceTimeQueue.add(
       GENERAL_TWITTER_AUDIENCE_TIME_JOB,
       {},
       {
@@ -629,6 +657,7 @@ export class InteractionsService implements OnModuleInit {
         timeout: 1000 * 60 * 2, // 10 seconds
         attempts: 5,
         removeOnComplete: true,
+        // priority: 1,
       },
     );
   }

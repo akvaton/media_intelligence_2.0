@@ -10,16 +10,22 @@ import {
   TWITTER_QUEUE,
   AUDIENCE_TIME_QUEUE,
   FACEBOOK_QUEUE,
+  GENERAL_AUDIENCE_TIME_QUEUE,
 } from 'src/config/constants';
 import { Article } from '../news/entities/news-item.entity';
 import { AudienceTimeProcessor } from './consumers/audience-time.processor';
+import { AudienceTime } from './entities/audience-time.entity';
+import { GeneralAudienceTimeProcessor } from './consumers/general-audience-time.processor';
 
 @Module({
   imports: [
     HttpModule,
-    TypeOrmModule.forFeature([Interaction, Article]),
+    TypeOrmModule.forFeature([Interaction, Article, AudienceTime]),
     BullModule.registerQueue({
       name: AUDIENCE_TIME_QUEUE,
+    }),
+    BullModule.registerQueue({
+      name: GENERAL_AUDIENCE_TIME_QUEUE,
     }),
     BullModule.registerQueue({
       name: FACEBOOK_QUEUE,
@@ -42,6 +48,7 @@ import { AudienceTimeProcessor } from './consumers/audience-time.processor';
     TwitterInteractionsProcessor,
     FacebookInteractionsProcessor,
     AudienceTimeProcessor,
+    GeneralAudienceTimeProcessor,
   ],
   exports: [InteractionsService],
 })

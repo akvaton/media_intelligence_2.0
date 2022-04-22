@@ -1,6 +1,7 @@
 export const TWITTER_QUEUE = 'twitter-interactions';
 export const FACEBOOK_QUEUE = 'facebook-interactions';
 export const AUDIENCE_TIME_QUEUE = 'audience-time';
+export const GENERAL_AUDIENCE_TIME_QUEUE = 'general-audience-time';
 export const BULL_QUEUES_ROUTE = 'queues';
 export const UKRAINIAN_AUDIENCE_TIME_JOB = 'ukrainian-audience-time';
 export const TWITTER_AUDIENCE_TIME_JOB = 'twitter-audience-time';

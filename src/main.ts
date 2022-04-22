@@ -6,6 +6,7 @@ import {
   TWITTER_QUEUE,
   AUDIENCE_TIME_QUEUE,
   BULL_QUEUES_ROUTE,
+  GENERAL_AUDIENCE_TIME_QUEUE,
 } from './config/constants';
 import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ExpressAdapter } from '@bull-board/express';
@@ -19,6 +20,7 @@ async function bootstrap() {
     `BullQueue_${FACEBOOK_QUEUE}`,
     `BullQueue_${TWITTER_QUEUE}`,
     `BullQueue_${AUDIENCE_TIME_QUEUE}`,
+    `BullQueue_${GENERAL_AUDIENCE_TIME_QUEUE}`,
   ];
   const {} = createBullBoard({
     queues: queues.map((queueName) => new BullAdapter(app.get(queueName))),
