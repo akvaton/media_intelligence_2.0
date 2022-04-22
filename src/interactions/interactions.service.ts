@@ -391,7 +391,7 @@ export class InteractionsService implements OnModuleInit {
           Math.round(dayjs(interaction.requestTime).minute() / 15) * 15;
         const nearestInteractionDate = dayjs(interaction.requestTime)
           .minute(rounded)
-          .second(0)
+          .startOf('minute')
           .toDate();
 
         const nearestGeneralAudienceTime =
