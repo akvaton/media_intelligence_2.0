@@ -13,7 +13,9 @@ export class GeneralAudienceTimeProcessor {
 
   @Process(GENERAL_TWITTER_AUDIENCE_TIME_JOB)
   async measureGeneralTwitterAudienceTime() {
-    const measuredTime = dayjs().subtract(INTERACTIONS_PROCESSES_FINISH, 'ms');
+    const measuredTime = dayjs()
+      .subtract(INTERACTIONS_PROCESSES_FINISH, 'ms')
+      .startOf('minute');
 
     await this.interactionsService.measureGeneralTwitterAudienceTime(
       measuredTime.toDate(),
