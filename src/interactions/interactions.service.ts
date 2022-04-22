@@ -406,7 +406,8 @@ export class InteractionsService implements OnModuleInit {
         });
         if (nearestGeneralAudienceTime) {
           interaction.audienceTime =
-            nearestGeneralAudienceTime.twitterInteractions;
+            nearestGeneralAudienceTime.twitterInteractions +
+            previousInteraction.audienceTime;
         } else {
           const { sum } = await this.interactionsRepository
             .createQueryBuilder('interaction')
@@ -483,9 +484,6 @@ export class InteractionsService implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.logger.debug('Pausing the queue');
-    this.twitterInteractionsQueue.resume();
-    this.audienceTimeQueue.pause();
     this.enqueueGeneralAudienceTimeMeasuring();
     // this.audienceTimeQueue.add(
     //   ENSURE_ACCUMULATED_INTERACTIONS,
@@ -657,7 +655,6 @@ export class InteractionsService implements OnModuleInit {
         timeout: 1000 * 60 * 2, // 10 seconds
         attempts: 5,
         removeOnComplete: true,
-        // priority: 1,
       },
     );
   }
