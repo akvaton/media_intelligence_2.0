@@ -11,6 +11,7 @@ import * as dayjs from 'dayjs';
 import { HttpService } from '@nestjs/axios';
 import { JSDOM } from 'jsdom';
 import {
+  AUDIENCE_TIME_EVERY,
   INTERACTIONS_PROCESSES_EVERY,
   INTERACTIONS_PROCESSES_FINISH,
   INTERACTIONS_PROCESSES_LIMIT,
@@ -26,6 +27,7 @@ import {
   TWITTER_QUEUE,
   UKRAINIAN_AUDIENCE_TIME_JOB,
   REGRESSION_MIN_VALUE,
+  GENERAL_TWITTER_AUDIENCE_TIME_JOB,
 } from 'src/config/constants';
 import { GraphData, SocialMediaKey } from './dto/interaction.dto';
 import { FeedOrigin } from '../feeds/entities/feed.entity';
@@ -36,6 +38,7 @@ const regression = require('regression');
 
 import { calculateRegressionCoefficient } from '../utils/regression-coefficient';
 import { getChunks } from '../utils/chunks';
+import { AudienceTime } from './entities/audience-time.entity';
 
 @Injectable()
 export class InteractionsService implements OnModuleInit {
@@ -347,7 +350,7 @@ export class InteractionsService implements OnModuleInit {
     });
   }
 
-  public async measureTwitterAudienceTime(
+  public async measureArticleTwitterAudienceTime(
     article: Article,
     interactionIndex: number,
   ) {
@@ -454,6 +457,7 @@ export class InteractionsService implements OnModuleInit {
   onModuleInit() {
     this.logger.debug('Pausing the queue');
     this.twitterInteractionsQueue.pause();
+    this.enqueueGeneralAudienceTimeMeasuring();
     // this.audienceTimeQueue.add(
     //   ENSURE_ACCUMULATED_INTERACTIONS,
     //   {},
@@ -614,4 +618,40 @@ export class InteractionsService implements OnModuleInit {
 
     return bestValue;
   };
+
+  private enqueueGeneralAudienceTimeMeasuring() {
+    return this.audienceTimeQueue.add(
+      GENERAL_TWITTER_AUDIENCE_TIME_JOB,
+      {},
+      {
+        repeat: { cron: '0 */15 * * * *' }, // Every 15 minutes
+        timeout: 1000 * 60 * 2, // 10 seconds
+        attempts: 5,
+        removeOnComplete: true,
+      },
+    );
+  }
+
+  async measureGeneralTwitterAudienceTime(time: Date) {
+    const requestTime = dayjs(time);
+    const parameters = {
+      start: dayjs(time).subtract(AUDIENCE_TIME_EVERY).toISOString(),
+      end: requestTime.toISOString(),
+    };
+    this.logger.debug({ parameters });
+    const { sum } = await this.interactionsRepository
+      .createQueryBuilder('interaction')
+      .select('SUM(interaction.twitterInteractions)', 'sum')
+      .where(
+        'interaction."Time of request" BETWEEN :start AND :end',
+        parameters,
+      )
+      .getRawOne();
+    const audienceTime = new AudienceTime();
+
+    audienceTime.requestTime = requestTime.toDate();
+    audienceTime.twitterInteractions = sum || 0;
+
+    await audienceTime.save();
+  }
 }

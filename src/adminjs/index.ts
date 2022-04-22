@@ -6,6 +6,7 @@ import ListAction from './utils/custom-article-list';
 import EditAction from './utils/custom-article-edit';
 import ExportAction from './utils/action-article-export';
 import CalculateRegressionCoefficientAction from './utils/action-article-calculate-potential';
+import { AudienceTime } from '../interactions/entities/audience-time.entity';
 
 let lastPosition = 1000;
 
@@ -107,6 +108,10 @@ export const ADMIN_JS_OPTIONS: AdminJSOptions = {
     },
     {
       resource: Interaction,
+      options: { parent: null, sort: { direction: 'desc', sortBy: 'id' } },
+    },
+    {
+      resource: AudienceTime,
       options: { parent: null, sort: { direction: 'desc', sortBy: 'id' } },
     },
   ],

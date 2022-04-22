@@ -4,12 +4,17 @@ import { InteractionsService } from '../interactions.service';
 import {
   AUDIENCE_TIME_QUEUE,
   ENSURE_ACCUMULATED_INTERACTIONS,
+  GENERAL_TWITTER_AUDIENCE_TIME_JOB,
   RECALCULATE_THE_COEFFICIENT_FOR_ARTICLE,
   TWITTER_AUDIENCE_TIME_JOB,
   UKRAINIAN_AUDIENCE_TIME_JOB,
 } from 'src/config/constants';
 import { Article } from 'src/news/entities/news-item.entity';
-import { INTERACTIONS_PROCESSES_LIMIT } from '../../config/configuration';
+import {
+  INTERACTIONS_PROCESSES_FINISH,
+  INTERACTIONS_PROCESSES_LIMIT,
+} from '../../config/configuration';
+import * as dayjs from 'dayjs';
 
 @Processor(AUDIENCE_TIME_QUEUE)
 export class AudienceTimeProcessor {
@@ -48,9 +53,18 @@ export class AudienceTimeProcessor {
   ) {
     const { newsItem, repeatedTimes } = job.data;
 
-    await this.interactionsService.measureTwitterAudienceTime(
+    await this.interactionsService.measureArticleTwitterAudienceTime(
       newsItem,
       repeatedTimes,
+    );
+  }
+
+  @Process(GENERAL_TWITTER_AUDIENCE_TIME_JOB)
+  async measureGeneralTwitterAudienceTime() {
+    const measuredTime = dayjs().subtract(INTERACTIONS_PROCESSES_FINISH, 'ms');
+
+    await this.interactionsService.measureGeneralTwitterAudienceTime(
+      measuredTime.toDate(),
     );
   }
 
