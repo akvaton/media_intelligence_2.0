@@ -407,7 +407,15 @@ export class InteractionsService implements OnModuleInit {
       })
       .getRawOne();
 
-    this.logger.debug(`measureInteractionTwitterAudienceTime: ${sum}`);
+    this.logger.debug(
+      `measureInteractionTwitterAudienceTime: ${JSON.stringify({
+        start,
+        end,
+        sum,
+        articleId,
+        interactionIndex,
+      })}`,
+    );
     if (sum > 0) {
       audienceTime = sum + previousAudienceTime;
     } else {
