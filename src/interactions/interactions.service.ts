@@ -527,7 +527,6 @@ export class InteractionsService implements OnModuleInit {
           })
           .getRawOne();
 
-        this.logger.debug({ start, end, sum });
         if (sum > 0) {
           interaction.audienceTime = sum + previousInteraction.audienceTime;
         } else {
