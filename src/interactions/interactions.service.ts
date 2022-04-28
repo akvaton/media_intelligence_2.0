@@ -21,7 +21,6 @@ import { lastValueFrom } from 'rxjs';
 import {
   AUDIENCE_TIME_QUEUE,
   BIGMIR_MEDIA_SELECTOR,
-  ENSURE_ACCUMULATED_INTERACTIONS,
   FACEBOOK_QUEUE,
   TWITTER_AUDIENCE_TIME_JOB,
   TWITTER_QUEUE,
@@ -32,14 +31,13 @@ import {
 } from 'src/config/constants';
 import { GraphData, SocialMediaKey } from './dto/interaction.dto';
 import { FeedOrigin } from '../feeds/entities/feed.entity';
-import { CronExpression } from '@nestjs/schedule';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const regression = require('regression');
-
 import { calculateRegressionCoefficient } from '../utils/regression-coefficient';
 import { getChunks } from '../utils/chunks';
 import { AudienceTime } from './entities/audience-time.entity';
+import { OldTwitterAudiencePayload, TwitterAudienceTimePayload } from './types';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const regression = require('regression');
 
 @Injectable()
 export class InteractionsService implements OnModuleInit {
@@ -53,7 +51,9 @@ export class InteractionsService implements OnModuleInit {
       interactionId: number;
     }>,
     @InjectQueue(AUDIENCE_TIME_QUEUE)
-    private audienceTimeQueue: Queue,
+    private audienceTimeQueue: Queue<
+      OldTwitterAudiencePayload | TwitterAudienceTimePayload
+    >,
     @InjectQueue(GENERAL_AUDIENCE_TIME_QUEUE)
     private generalAudienceTimeQueue: Queue,
     @InjectQueue(TWITTER_QUEUE)
@@ -273,7 +273,9 @@ export class InteractionsService implements OnModuleInit {
 
     if (newsItemEntity.source.origin === FeedOrigin.USA) {
       await this.enqueueTwitterAudienceTimeMeasuring({
-        newsItem: newsItemEntity,
+        articleId: newsItemEntity.id,
+        publicationDate: interactions[0].requestTime,
+        interactionIndex: 0,
       });
     }
   }
@@ -304,21 +306,129 @@ export class InteractionsService implements OnModuleInit {
     return this.interactionsRepository.find(options);
   }
 
-  public enqueueTwitterAudienceTimeMeasuring({ newsItem, repeatedTimes = 0 }) {
-    return this.audienceTimeQueue.add(
-      TWITTER_AUDIENCE_TIME_JOB,
-      { newsItem, repeatedTimes },
-      {
-        removeOnComplete: true,
-        // removeOnFail: true,
-        jobId: newsItem.id,
-        timeout: 1000 * 60 * 2, // 2 minutes
-        delay: repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0,
-        attempts: 5,
-        backoff: { type: 'fixed', delay: 1000 * 60 * 5 },
-        priority: 2,
+  public enqueueTwitterAudienceTimeMeasuring(
+    params: OldTwitterAudiencePayload | TwitterAudienceTimePayload,
+  ) {
+    let jobId, delay, data;
+
+    this.logger.debug(
+      `enqueueTwitterAudienceTimeMeasuring ${JSON.stringify(params)}`,
+    );
+
+    if ('newsItem' in params) {
+      const { newsItem, repeatedTimes } = params;
+
+      data = params;
+      jobId = newsItem.id;
+      delay = repeatedTimes ? INTERACTIONS_PROCESSES_EVERY : 0;
+    } else {
+      data = {
+        ...params,
+        interactionIndex: params.interactionIndex || 0,
+        previousAudienceTime: params.previousAudienceTime || 0,
+      };
+      jobId = params.articleId;
+      delay = params.interactionIndex ? INTERACTIONS_PROCESSES_EVERY : 0;
+    }
+
+    if (data.interactionIndex === 1) {
+      debugger;
+    }
+    return this.audienceTimeQueue.add(TWITTER_AUDIENCE_TIME_JOB, data, {
+      removeOnComplete: true,
+      jobId,
+      timeout: 1000 * 60 * 2, // 2 minutes
+      delay,
+      attempts: 5,
+      backoff: { type: 'fixed', delay: 1000 * 60 * 5 },
+      priority: 2,
+    });
+  }
+
+  public convertOldTwitterAudienceTimePayload(
+    payload: OldTwitterAudiencePayload,
+  ): TwitterAudienceTimePayload {
+    const { newsItem, repeatedTimes } = payload;
+    const publicationDate = dayjs(newsItem.pubDate)
+      .startOf('minute')
+      .toISOString();
+
+    return {
+      articleId: newsItem.id,
+      publicationDate,
+      interactionIndex: repeatedTimes,
+    };
+  }
+
+  public async measureInteractionTwitterAudienceTimeByIndex({
+    interactionIndex,
+    previousAudienceTime,
+    publicationDate,
+    articleId,
+  }: TwitterAudienceTimePayload) {
+    const publicationTime = dayjs(publicationDate);
+    const requestTime = publicationTime
+      .add(INTERACTIONS_PROCESSES_EVERY * interactionIndex, 'ms')
+      .startOf('minute')
+      .toDate();
+
+    if (!interactionIndex) {
+      return this.interactionsRepository.update(
+        { articleId, requestTime },
+        {
+          audienceTime: 0,
+        },
+      );
+    }
+    const previousInteractionTime = dayjs(requestTime)
+      .subtract(INTERACTIONS_PROCESSES_EVERY, 'ms')
+      .startOf('minute')
+      .toDate();
+    let audienceTime = 0;
+    const [start, end] = [previousInteractionTime, requestTime].map(
+      (requestTime, index) => {
+        const rounded =
+          Math.round(
+            dayjs(requestTime).minute() / AUDIENCE_TIME_EVERY_MINUTES,
+          ) * AUDIENCE_TIME_EVERY_MINUTES;
+        const time = !index
+          ? dayjs(requestTime).minute(rounded).add(1, 'minute')
+          : dayjs(requestTime).minute(rounded);
+
+        return dayjs(time).startOf('minute').toISOString();
       },
     );
+    const { sum } = await this.audienceTimeRepository
+      .createQueryBuilder('audienceTime')
+      .select('SUM(audienceTime.twitterInteractions)', 'sum')
+      .where('audienceTime."Time of request" BETWEEN :start AND :end', {
+        start,
+        end,
+      })
+      .getRawOne();
+
+    this.logger.debug(`measureInteractionTwitterAudienceTime: ${sum}`);
+    if (sum > 0) {
+      audienceTime = sum + previousAudienceTime;
+    } else {
+      const { sum } = await this.interactionsRepository
+        .createQueryBuilder('interaction')
+        .select('SUM(interaction.twitterInteractions)', 'sum')
+        .where('interaction."Time of request" BETWEEN :start AND :end', {
+          start,
+          end,
+        })
+        .getRawOne();
+      audienceTime = sum + previousAudienceTime;
+    }
+
+    const interaction = await this.interactionsRepository.findOne({
+      articleId,
+      requestTime,
+    });
+
+    interaction.audienceTime = audienceTime;
+    return this.interactionsRepository.save(interaction);
   }
 
   public enqueueUkrainianAudienceTimeMeasuring({
@@ -463,46 +573,11 @@ export class InteractionsService implements OnModuleInit {
     return { id: interaction.id, audienceTime: interaction.audienceTime };
   }
 
-  async ensureAccumulatedInteractions() {
-    return;
-    const articles = await this.newsRepository
-      .createQueryBuilder('articles')
-      .select('*')
-      .where(
-        "EXISTS (SELECT * FROM interactions WHERE articleId = articles.id AND isAccumulated = 'False')",
-      )
-      .andWhere('articles.pubDate < :start', {
-        start: dayjs().subtract(96, 'hours').toISOString(),
-      })
-      .take(5)
-      .orderBy({ ['articles.pubDate']: 'ASC' })
-      .getRawMany();
-
-    this.logger.debug('Ensure Articles: ', JSON.stringify(articles));
-
-    return Promise.all(
-      articles.map((article) =>
-        this.recalculateAudienceTimeOnDemand(article.id),
-      ),
-    );
-  }
-
   onModuleInit() {
     setInterval(
       () => this.enqueueGeneralAudienceTimeMeasuring(),
       INTERACTIONS_PROCESSES_EVERY,
     );
-    this.recalculateGeneralAudienceTime();
-    // this.enqueueGeneralAudienceTimeMeasuring();
-    // this.audienceTimeQueue.add(
-    //   ENSURE_ACCUMULATED_INTERACTIONS,
-    //   {},
-    //   {
-    //     repeat: { cron: CronExpression.EVERY_30_MINUTES },
-    //     attempts: 5,
-    //     removeOnComplete: true,
-    //   },
-    // );
   }
 
   async recalculateAudienceTimeOnDemand(articleId: number) {
@@ -703,51 +778,12 @@ export class InteractionsService implements OnModuleInit {
       const audienceTime = new AudienceTime();
 
       audienceTime.requestTime = requestTime.toDate();
-      audienceTime.twitterInteractions = sum || 0;
+      audienceTime.twitterInteractions = sum > 0 ? sum : 0;
 
       return audienceTime.save();
     } catch (e) {
       this.logger.error(e);
       throw e;
     }
-  }
-
-  public async recalculateGeneralAudienceTime() {
-    const startDate = dayjs().startOf('month');
-    const firstRow = await this.audienceTimeRepository.findOne({
-      order: { requestTime: 'DESC' },
-    });
-    const endDate = firstRow ? dayjs(firstRow.requestTime) : dayjs();
-    const diff = endDate.diff(startDate, 'minutes');
-    const arrayLength = Math.floor(diff / AUDIENCE_TIME_EVERY_MINUTES);
-    this.logger.debug({
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      diff,
-      arrayLength,
-    });
-    const dates = [...Array(arrayLength)].map((_, index) =>
-      startDate
-        .add(AUDIENCE_TIME_EVERY_MINUTES * index, 'minutes')
-        .startOf('minute')
-        .toDate(),
-    );
-
-    // const existingOnes = await this.audienceTimeRepository.find({
-    //   where: { requestTime: In(dates) },
-    // });
-    // const existingDates = existingOnes.map(({ requestTime }) => requestTime);
-    // const nonExistingOnes = dates.filter(
-    //   (date) => !existingDates.includes(date),
-    // );
-    // this.logger.debug({ nonExistingOnes: nonExistingOnes.length });
-
-    return this.generalAudienceTimeQueue.addBulk(
-      dates.map((date) => ({
-        name: GENERAL_TWITTER_AUDIENCE_TIME_JOB,
-        data: { requestTime: date.toISOString() },
-        opts: { removeOnComplete: true, attempts: 5 },
-      })),
-    );
   }
 }

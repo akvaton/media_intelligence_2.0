@@ -5,6 +5,8 @@ export const GENERAL_AUDIENCE_TIME_QUEUE = 'general-audience-time';
 export const BULL_QUEUES_ROUTE = 'queues';
 export const UKRAINIAN_AUDIENCE_TIME_JOB = 'ukrainian-audience-time';
 export const TWITTER_AUDIENCE_TIME_JOB = 'twitter-audience-time';
+export const TWITTER_AUDIENCE_TIME_JOB_BY_INTERACTION =
+  'interaction-twitter-audience-time';
 export const GENERAL_TWITTER_AUDIENCE_TIME_JOB =
   'general-twitter-audience-time';
 export const PARSE_JOB = 'parse';
