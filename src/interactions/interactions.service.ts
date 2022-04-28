@@ -506,16 +506,16 @@ export class InteractionsService implements OnModuleInit {
       ) {
         const previousInteraction = articleInteractions[interactionIndex - 1];
         const [start, end] = [previousInteraction, interaction].map(
-          ({ requestTime }) => {
+          ({ requestTime }, index) => {
             const rounded =
               Math.round(
                 dayjs(requestTime).minute() / AUDIENCE_TIME_EVERY_MINUTES,
               ) * AUDIENCE_TIME_EVERY_MINUTES;
+            const time = !index
+              ? dayjs(requestTime).minute(rounded).add(1, 'minute')
+              : dayjs(requestTime).minute(rounded);
 
-            return dayjs(requestTime)
-              .minute(rounded)
-              .startOf('minute')
-              .toISOString();
+            return dayjs(time).startOf('minute').toISOString();
           },
         );
         const { sum } = await this.audienceTimeRepository
@@ -527,6 +527,7 @@ export class InteractionsService implements OnModuleInit {
           })
           .getRawOne();
 
+        this.logger.debug({ start, end, sum });
         if (sum > 0) {
           interaction.audienceTime = sum + previousInteraction.audienceTime;
         } else {
